@@ -1,65 +1,45 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/pos_entities.dart';
 import '../../domain/repositories/pos_repositories.dart';
 
 class XprinterServiceImpl implements PrinterService {
-  static const _keyIp = 'printer_ip';
-  static const _keyPort = 'printer_port';
-  static const _keyIs80mm = 'printer_is_80mm';
-  static const _keyAutoPrint = 'printer_auto_print';
+  static const _keyIp = 'osnova_printer_ip';
+  static const _keyPort = 'osnova_printer_port';
+  static const _keyIs80mm = 'osnova_printer_80mm';
+  static const _keyAutoPrint = 'osnova_printer_auto_print';
 
-  bool _isEmulatorOrLoopbackIp(String ip) {
-    return ip.startsWith('10.0.2.') || ip.startsWith('127.');
-  }
-
-@override
+  @override
   Future<PrinterSettingsEntity> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedIp = prefs.getString(_keyIp) ?? '';
-    final autoPrint = prefs.getBool(_keyAutoPrint) ?? true;
-
-    if (_isEmulatorOrLoopbackIp(savedIp)) {
-      await clearSettings();
-      return PrinterSettingsEntity(
-        ip: '',
-        port: 9100,
-        is80mm: false,
-        autoPrint: autoPrint,
-      );
-    }
-
-   return PrinterSettingsEntity(
-      ip: savedIp,
+    return PrinterSettingsEntity(
+      ip: prefs.getString(_keyIp) ?? '',
       port: prefs.getInt(_keyPort) ?? 9100,
-      is80mm: prefs.getBool(_keyIs80mm) ?? false,
-      autoPrint: autoPrint,
+      is80mm: prefs.getBool(_keyIs80mm) ?? true,
+      autoPrint: prefs.getBool(_keyAutoPrint) ?? true,
     );
   }
-  @override
-  Future<void> saveAutoPrint(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyAutoPrint, enabled);
-  }
+
   @override
   Future<void> saveSettings({
     required String ip,
     int port = 9100,
     required bool is80mm,
   }) async {
-    final cleanIp = ip.trim();
-    if (_isEmulatorOrLoopbackIp(cleanIp)) return;
-
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyIp, cleanIp);
+    await prefs.setString(_keyIp, ip.trim());
     await prefs.setInt(_keyPort, port);
     await prefs.setBool(_keyIs80mm, is80mm);
+  }
+
+  @override
+  Future<void> saveAutoPrint(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoPrint, enabled);
   }
 
   @override
@@ -67,73 +47,58 @@ class XprinterServiceImpl implements PrinterService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIp);
     await prefs.remove(_keyPort);
-    await prefs.remove(_keyIs80mm);
-  }
-
-  Future<String?> _getLocalSubnet() async {
-    final interfaces = await NetworkInterface.list(
-      includeLoopback: false,
-      type: InternetAddressType.IPv4,
-    );
-
-    for (final interface in interfaces) {
-      for (final addr in interface.addresses) {
-        final ip = addr.address;
-        // Ігноруємо віртуальну NAT-мережу Android-емулятора (10.0.2.x)
-        if (_isEmulatorOrLoopbackIp(ip)) continue;
-
-        if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
-          final parts = ip.split('.');
-          if (parts.length == 4) {
-            return '${parts[0]}.${parts[1]}.${parts[2]}';
-          }
-        }
-      }
-    }
-    return null;
+    await prefs.setBool(_keyAutoPrint, false);
   }
 
   @override
   Future<List<String>> discoverNetworkPrinters({int port = 9100}) async {
-    final subnet = await _getLocalSubnet();
-    if (subnet == null) return [];
+    final found = <String>[];
+    final interfaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLinkLocal: false,
+    );
 
-    final List<String> foundPrinters = [];
-    const batchSize = 64;
+    final subnets = <String>{};
+    for (final iface in interfaces) {
+      for (final addr in iface.addresses) {
+        final parts = addr.address.split('.');
+        if (parts.length == 4) {
+          subnets.add('${parts[0]}.${parts[1]}.${parts[2]}');
+        }
+      }
+    }
 
-    for (int start = 1; start <= 254; start += batchSize) {
-      final end = (start + batchSize - 1).clamp(1, 254);
+    for (final subnet in subnets) {
       final futures = <Future<void>>[];
-
-      for (int i = start; i <= end; i++) {
-        final targetIp = '$subnet.$i';
+      for (int host = 1; host <= 254; host++) {
+        final ip = '$subnet.$host';
         futures.add(() async {
           try {
             final socket = await Socket.connect(
-              targetIp,
+              ip,
               port,
-              timeout: const Duration(milliseconds: 350),
+              timeout: const Duration(milliseconds: 220),
             );
             socket.destroy();
-            foundPrinters.add(targetIp);
+            found.add(ip);
           } catch (_) {}
         }());
       }
       await Future.wait(futures);
     }
 
-    return foundPrinters;
+    found.sort();
+    return found;
   }
 
   @override
   Future<Uint8List?> captureWidgetAsImage(GlobalKey boundaryKey) async {
-    final boundary =
-        boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    final boundary = boundaryKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
     if (boundary == null) return null;
 
-    final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-    final ByteData? byteData =
-        await image.toByteData(format: ui.ImageByteFormat.png);
+    final image = await boundary.toImage(pixelRatio: 2.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData?.buffer.asUint8List();
   }
 
@@ -141,33 +106,123 @@ class XprinterServiceImpl implements PrinterService {
   Future<void> printImageOverWifi(Uint8List pngBytes) async {
     final settings = await loadSettings();
     if (settings.ip.isEmpty) {
-      throw Exception('Принтер не обрано. Підключіть Xprinter у налаштуваннях (⚙).');
+      throw Exception('IP-адресу принтера Xprinter не вказано');
     }
 
-    final paperSize = settings.is80mm ? PaperSize.mm80 : PaperSize.mm58;
-    final targetWidth = settings.is80mm ? 576 : 384;
+    // 80 мм = 576 точок, 58 мм = 384 точки (стандарт ESC/POS 203 DPI)
+    final int targetWidth = settings.is80mm ? 576 : 384;
 
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(paperSize, profile);
-    final List<int> bytes = [];
+    final codec = await ui.instantiateImageCodec(pngBytes);
+    final frame = await codec.getNextFrame();
+    final srcImage = frame.image;
 
-    final decodedImage = img.decodeImage(pngBytes);
-    if (decodedImage != null) {
-      final resized = img.copyResize(decodedImage, width: targetWidth);
-      bytes.addAll(generator.imageRaster(resized));
+    final double scale = targetWidth / srcImage.width;
+    final int targetHeight = (srcImage.height * scale).round();
+
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final bgPaint = ui.Paint()..color = const ui.Color(0xFFFFFFFF);
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble()),
+      bgPaint,
+    );
+
+    final double dx = ((targetWidth - (srcImage.width * scale)) / 2).clamp(
+      0.0,
+      targetWidth.toDouble(),
+    );
+    canvas.drawImageRect(
+      srcImage,
+      ui.Rect.fromLTWH(
+        0,
+        0,
+        srcImage.width.toDouble(),
+        srcImage.height.toDouble(),
+      ),
+      ui.Rect.fromLTWH(
+        dx,
+        0,
+        srcImage.width * scale,
+        targetHeight.toDouble(),
+      ),
+      ui.Paint()..filterQuality = ui.FilterQuality.high,
+    );
+
+    final normalizedImage = await recorder
+        .endRecording()
+        .toImage(targetWidth, targetHeight);
+    final rgbaData = await normalizedImage.toByteData(
+      format: ui.ImageByteFormat.rawRgba,
+    );
+    if (rgbaData == null) {
+      throw Exception('Не вдалося обробити растр чека');
     }
 
-    bytes.addAll(generator.feed(2));
-    bytes.addAll(generator.cut());
+    final escPosBytes = _buildEscPosRasterCommand(
+      rgba: rgbaData.buffer.asUint8List(),
+      width: targetWidth,
+      height: targetHeight,
+    );
 
     final socket = await Socket.connect(
       settings.ip,
       settings.port,
-      timeout: const Duration(seconds: 3),
+      timeout: const Duration(seconds: 4),
     );
-    socket.add(bytes);
-    await socket.flush();
-    await socket.close();
+    try {
+      socket.add(escPosBytes);
+      await socket.flush();
+      await Future.delayed(const Duration(milliseconds: 250));
+    } finally {
+      await socket.close();
+    }
   }
-  
+
+  Uint8List _buildEscPosRasterCommand({
+    required Uint8List rgba,
+    required int width,
+    required int height,
+  }) {
+    final bytesPerRow = (width + 7) ~/ 8;
+    final builder = BytesBuilder();
+
+    // ESC @ — Ініціалізація принтера
+    builder.add([0x1B, 0x40]);
+    // ESC a 1 — Вирівнювання по центру на рівні принтера
+    builder.add([0x1B, 0x61, 0x01]);
+
+    // GS v 0 m xL xH yL yH — Друк растрового зображення
+    final xL = bytesPerRow & 0xFF;
+    final xH = (bytesPerRow >> 8) & 0xFF;
+    final yL = height & 0xFF;
+    final yH = (height >> 8) & 0xFF;
+    builder.add([0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
+
+    final raster = Uint8List(bytesPerRow * height);
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final offset = (y * width + x) * 4;
+        final r = rgba[offset];
+        final g = rgba[offset + 1];
+        final b = rgba[offset + 2];
+        final a = rgba[offset + 3];
+
+        final luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+        final isBlack = a > 128 && luminance < 175;
+
+        if (isBlack) {
+          final byteIndex = y * bytesPerRow + (x >> 3);
+          raster[byteIndex] |= (0x80 >> (x & 7));
+        }
+      }
+    }
+
+    builder.add(raster);
+
+    // Протяжка стрічки та повний/частковий відріз (GS V 66 0)
+    builder.add([0x1B, 0x64, 0x04]);
+    builder.add([0x1D, 0x56, 0x42, 0x00]);
+
+    return builder.toBytes();
+  }
 }
