@@ -127,10 +127,12 @@ class XprinterServiceImpl implements PrinterService {
       bgPaint,
     );
 
-    final double dx = ((targetWidth - (srcImage.width * scale)) / 2).clamp(
+    final double scaledWidth = srcImage.width * scale;
+    final double dx = ((targetWidth - scaledWidth) / 2).clamp(
       0.0,
       targetWidth.toDouble(),
     );
+
     canvas.drawImageRect(
       srcImage,
       ui.Rect.fromLTWH(
@@ -142,7 +144,7 @@ class XprinterServiceImpl implements PrinterService {
       ui.Rect.fromLTWH(
         dx,
         0,
-        srcImage.width * scale,
+        scaledWidth,
         targetHeight.toDouble(),
       ),
       ui.Paint()..filterQuality = ui.FilterQuality.high,
@@ -188,7 +190,7 @@ class XprinterServiceImpl implements PrinterService {
 
     // ESC @ — Ініціалізація принтера
     builder.add([0x1B, 0x40]);
-    // ESC a 1 — Вирівнювання по центру на рівні принтера
+    // ESC a 1 — Вирівнювання по центру на рівні Xprinter
     builder.add([0x1B, 0x61, 0x01]);
 
     // GS v 0 m xL xH yL yH — Друк растрового зображення
@@ -208,7 +210,7 @@ class XprinterServiceImpl implements PrinterService {
         final a = rgba[offset + 3];
 
         final luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-        final isBlack = a > 128 && luminance < 175;
+        final isBlack = a > 128 && luminance < 192;
 
         if (isBlack) {
           final byteIndex = y * bytesPerRow + (x >> 3);
@@ -219,7 +221,7 @@ class XprinterServiceImpl implements PrinterService {
 
     builder.add(raster);
 
-    // Протяжка стрічки та повний/частковий відріз (GS V 66 0)
+    // Протяжка стрічки та відріз чека (GS V 66 0)
     builder.add([0x1B, 0x64, 0x04]);
     builder.add([0x1D, 0x56, 0x42, 0x00]);
 
