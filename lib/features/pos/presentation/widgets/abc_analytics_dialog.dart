@@ -152,7 +152,7 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'ABC-АНАЛІЗ ПРОДАЖІВ ТОВАРІВ',
                         style: TextStyle(
                           color: OsnovaTheme.goldBright,
@@ -163,7 +163,7 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
                       ),
                       Text(
                         widget.periodTitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.sageMuted,
                           fontSize: 12.5,
                         ),
@@ -172,8 +172,10 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded,
-                        color: OsnovaTheme.sageMuted),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: OsnovaTheme.sageMuted,
+                    ),
                   ),
                 ],
               ),
@@ -193,7 +195,7 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
 
               Expanded(
                 child: visible.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'Недостатньо даних продажів для ABC-аналізу',
                           style: TextStyle(color: OsnovaTheme.sageMuted),
@@ -246,15 +248,15 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
                                     children: [
                                       Text(
                                         item.stat.name,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.creamText,
                                           fontWeight: FontWeight.w800,
                                           fontSize: 14,
                                         ),
                                       ),
                                       Text(
-                                        '${item.stat.category} • ${_groupHint(item.group)}',
-                                        style: const TextStyle(
+                                        '${item.stat.category} •${_groupHint(item.group)}',
+                                        style: TextStyle(
                                           color: OsnovaTheme.sageMuted,
                                           fontSize: 11.5,
                                         ),
@@ -267,16 +269,17 @@ class _AbcAnalyticsDialogState extends State<AbcAnalyticsDialog> {
                                   children: [
                                     Text(
                                       MoneyFormatter.format(
-                                          item.stat.revenueCents),
-                                      style: const TextStyle(
+                                        item.stat.revenueCents,
+                                      ),
+                                      style: TextStyle(
                                         color: OsnovaTheme.goldBright,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 14,
                                       ),
                                     ),
                                     Text(
-                                      '${item.stat.qtySold} шт • ${item.revenueSharePercent.toStringAsFixed(1)}% (накоп. ${item.cumulativePercent.toStringAsFixed(0)}%)',
-                                      style: const TextStyle(
+                                      '${item.stat.qtySold} шт • ${item.revenueSharePercent.toStringAsFixed(1)}\% (накоп. ${item.cumulativePercent.toStringAsFixed(0)}%)',
+                                      style: TextStyle(
                                         color: OsnovaTheme.sageMuted,
                                         fontSize: 11.5,
                                       ),

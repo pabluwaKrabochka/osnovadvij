@@ -208,14 +208,14 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         Icons.qr_code_scanner_rounded,
                         color: OsnovaTheme.goldBright,
                         size: 20,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Text(
                         'АФІША OSNOVA • НАБЛИЖЕННЯ ДЛЯ QR-КОДІВ',
                         style: TextStyle(
@@ -229,7 +229,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                   ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: OsnovaTheme.creamText,
                     ),
@@ -436,7 +436,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                       OsnovaTheme.gold.withValues(alpha: 0.5),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -444,7 +444,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                     size: 13,
                                     color: OsnovaTheme.goldBright,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     'АФІША ПРОСТОРУ',
                                     style: TextStyle(
@@ -477,7 +477,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                       .withValues(alpha: 0.48),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
@@ -485,7 +485,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                     size: 18,
                                     color: OsnovaTheme.goldBright,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Натисніть для QR-кодів та збільшення',
                                     style: TextStyle(
@@ -494,7 +494,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Icon(
                                     Icons.zoom_in_rounded,
                                     size: 16,
@@ -551,7 +551,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
@@ -585,7 +585,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                               children: [
                                 Text(
                                   _formattedTime(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.goldBright,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
@@ -595,7 +595,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                 const SizedBox(height: 2),
                                 Text(
                                   _formattedDateUa(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.sageMuted,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -621,7 +621,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                               ),
                             ),
                             onPressed: _enterIdleMode,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.auto_awesome_rounded,
                               size: 17,
                               color: OsnovaTheme.goldBright,
@@ -655,7 +655,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                     .withValues(alpha: 0.45),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
@@ -663,7 +663,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                   size: 8,
                                   color: OsnovaTheme.liveGreen,
                                 ),
-                                SizedBox(width: 6),
+                                const SizedBox(width: 6),
                                 Text(
                                   'ТЕРМІНАЛ БАРИСТИ ТА АДМІНІСТРАТОРА',
                                   style: TextStyle(
@@ -677,7 +677,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          const Text(
+                          Text(
                             'Простір ігор, кави та подій',
                             style: TextStyle(
                               color: OsnovaTheme.goldBright,
@@ -687,14 +687,14 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.location_on_outlined,
                                 size: 17,
                                 color: OsnovaTheme.gold,
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
                                 'Кропивницький • вул. Арсенія Тарковського, 76/3',
                                 style: TextStyle(
@@ -783,13 +783,13 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                         Container(
                                           width: 7,
                                           height: 7,
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: OsnovaTheme.goldBright,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
                                         const SizedBox(width: 7),
-                                        const Text(
+                                        Text(
                                           'ГОТІВКА В КАСІ НА СТАРТІ ЗМІНИ',
                                           style: TextStyle(
                                             color: OsnovaTheme.sageMuted,
@@ -803,7 +803,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                     const SizedBox(height: 6),
                                     Text(
                                       cashText,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: OsnovaTheme.goldBright,
                                         fontSize: 28,
                                         fontWeight: FontWeight.w900,
@@ -841,7 +841,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                     }
                                     _resetIdleTimer();
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.edit_rounded,
                                     size: 16,
                                     color: OsnovaTheme.goldBright,
@@ -884,7 +884,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
                                   onTap: _enterPos,
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
@@ -892,7 +892,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                         size: 24,
                                         color: OsnovaTheme.bgDark,
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Text(
                                         'ПЕРЕЙТИ ДО КАСИ',
                                         style: TextStyle(
@@ -902,7 +902,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                           letterSpacing: 1.0,
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Icon(
                                         Icons.arrow_forward_rounded,
                                         size: 20,
@@ -937,8 +937,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                   Navigator.of(context)
                                       .push(
                                         MaterialPageRoute(
-                                          builder: (_) =>
-                                              const YoutubeChannelPage(),
+                                          builder: (_) => YoutubeChannelPage(),
                                         ),
                                       )
                                       .then((_) => _resetIdleTimer());
@@ -1014,7 +1013,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             width: 1.4,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'OSNOVA',
                           style: TextStyle(
                             color: OsnovaTheme.creamText,
@@ -1055,7 +1054,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'ПРОСТІР ВІДЧИНЕНО',
                               style: TextStyle(
                                 color: OsnovaTheme.creamText,
@@ -1076,7 +1075,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                     children: [
                       Text(
                         _formattedTime(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.goldBright,
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
@@ -1087,7 +1086,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                       const SizedBox(height: 3),
                       Text(
                         _formattedDateUa(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.sageMuted,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -1260,7 +1259,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                             ),
                                             child: Text(
                                               activeSlide.badge,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: OsnovaTheme.goldBright,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w900,
@@ -1273,7 +1272,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                       const SizedBox(height: 20),
                                       Text(
                                         activeSlide.title,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.creamText,
                                           fontSize: 28,
                                           fontWeight: FontWeight.w900,
@@ -1283,7 +1282,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                       const SizedBox(height: 12),
                                       Text(
                                         activeSlide.subtitle,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.sageMuted,
                                           fontSize: 16,
                                           height: 1.45,
@@ -1306,7 +1305,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                                         ),
                                         child: Text(
                                           activeSlide.accentTag,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: OsnovaTheme.goldBright,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
@@ -1395,14 +1394,14 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.location_on_outlined,
                           size: 18,
                           color: OsnovaTheme.goldBright,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Кропивницький • вул. Арсенія Тарковського, 76/3',
                           style: TextStyle(
@@ -1420,14 +1419,14 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             0.45 * math.sin(_ambientCtrl.value * 4 * math.pi);
                         return Opacity(
                           opacity: pulse,
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 Icons.touch_app_rounded,
                                 size: 18,
                                 color: OsnovaTheme.goldBright,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'Торкніться екрана для керування касою',
                                 style: TextStyle(
@@ -1597,7 +1596,7 @@ class _HighlightChip extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: OsnovaTheme.creamText,
               fontSize: 12.5,
               fontWeight: FontWeight.w700,

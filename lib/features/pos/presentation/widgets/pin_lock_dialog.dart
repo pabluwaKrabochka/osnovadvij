@@ -247,7 +247,7 @@ class _PinLockDialogState extends State<PinLockDialog>
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                const Text(
+                                Text(
                                   'OSNOVA • ACCESS',
                                   style: TextStyle(
                                     color: OsnovaTheme.sageMuted,
@@ -261,7 +261,7 @@ class _PinLockDialogState extends State<PinLockDialog>
                           ),
                           IconButton(
                             visualDensity: VisualDensity.compact,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close_rounded,
                               color: OsnovaTheme.sageMuted,
                               size: 20,
@@ -322,7 +322,7 @@ class _PinLockDialogState extends State<PinLockDialog>
 
                       const SizedBox(height: 12),
 
-                      const Text(
+                      Text(
                         'ВХІД ДО КАСИ OSNOVA',
                         style: TextStyle(
                           color: OsnovaTheme.creamText,

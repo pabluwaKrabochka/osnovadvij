@@ -273,8 +273,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _OrnamentLine(leftToRight: true),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 14),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               child: Text(
                                 'ПРОСТІР ІГОР, КАВИ ТА ПОДІЙ',
                                 style: TextStyle(
@@ -330,7 +330,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                               ),
                               Text(
                                 '$percent%',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: OsnovaTheme.goldBright,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w900,
@@ -355,13 +355,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                               widthFactor: val.clamp(0.0, 1.0),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
                                       OsnovaTheme.gold,
                                       OsnovaTheme.goldBright,
                                       Colors.white,
                                     ],
-                                    stops: [0.0, 0.82, 1.0],
+                                    stops: const [0.0, 0.82, 1.0],
                                   ),
                                   borderRadius: BorderRadius.circular(6),
                                   boxShadow: [

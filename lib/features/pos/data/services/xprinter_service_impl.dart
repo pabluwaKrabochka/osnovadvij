@@ -222,7 +222,7 @@ class XprinterServiceImpl implements PrinterService {
     builder.add(raster);
 
     // Протяжка стрічки та відріз чека (GS V 66 0)
-    builder.add([0x1B, 0x64, 0x04]);
+    builder.add([0x1B, 0x64, 0x03]);
     builder.add([0x1D, 0x56, 0x42, 0x00]);
 
     return builder.toBytes();

@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:osnova_pos/features/pos/data/services/fortune_generator.dart';
 import 'package:osnova_pos/features/pos/data/services/osnova_telegram_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/theme/osnova_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../data/datasources/pos_local_datasource.dart';
 import '../../data/services/privat_terminal_service_impl.dart';
@@ -81,6 +83,13 @@ class PosController extends ChangeNotifier {
     dateTimeText: '',
   );
 
+  OsnovaThemeId get currentTheme => OsnovaTheme.currentTheme;
+
+  Future<void> setTheme(OsnovaThemeId themeId) async {
+    await OsnovaTheme.setTheme(themeId);
+    notifyListeners();
+  }
+
   bool get isPrinterConnected =>
       connectedPrinterIp != null && connectedPrinterIp!.isNotEmpty;
 
@@ -121,10 +130,10 @@ class PosController extends ChangeNotifier {
   }
 
   Future<void> initPos() async {
+    await OsnovaTheme.loadSavedTheme();
     final prefs = await SharedPreferences.getInstance();
     _savedCategoryOrder = prefs.getStringList(_keyCategoryOrder) ?? [];
 
-    // Підтягуємо налаштування Telegram з SQLite та підписуємось на їх оновлення
     final tgConfig = await PosLocalDataSource.instance.loadTelegramSettings();
     OsnovaTelegramService.instance.onConfigSaved = (token, chatId) async {
       await PosLocalDataSource.instance.saveTelegramSettings(
@@ -166,14 +175,12 @@ class PosController extends ChangeNotifier {
     );
   }
 
-  /// Автоматичне закриття зміни о 23:50 або при відновленні світла наступного дня
   Future<void> performAutoCloseShift() async {
     if (currentShift == null) return;
     await buildReport(isZReport: true, isAutoClosed: true);
     final closedZ = lastStandardZReport;
     final carryOverCash = closedZ?.expectedCashInDrawerCents ?? 0;
 
-    // Відкриваємо нову зміну з перенесенням залишку готівки в шухляді
     currentShift = await _repository.getOrOpenShift(
       defaultOpeningCash: carryOverCash,
     );
@@ -208,7 +215,6 @@ class PosController extends ChangeNotifier {
     shiftExpenses = await _repository.getShiftExpenses(shiftId);
   }
 
-  /// Службове внесення або винесення готівки (як у Poster / ДПС)
   Future<void> addCashOperation(
     CashOpType type,
     int amountCents,
@@ -224,7 +230,6 @@ class PosController extends ChangeNotifier {
     await _refreshShiftData();
     notifyListeners();
 
-    // Дублюємо операцію в робочий Telegram-чат команди
     OsnovaTelegramService.instance.notifyCashOperation(
       type: type,
       amountCents: amountCents,
@@ -232,7 +237,6 @@ class PosController extends ChangeNotifier {
     );
   }
 
-  /// Завантаження статистики продажів для ABC-аналізу
   Future<List<ProductSalesStat>> loadAbcAnalytics({int daysBack = 30}) {
     return PosLocalDataSource.instance.getProductSalesStats(daysBack: daysBack);
   }
@@ -573,6 +577,18 @@ class PosController extends ChangeNotifier {
         1;
     final uniqueCode = _generateUniqueReceiptCode(now, nextNum);
 
+    String? fortuneText;
+    final fortuneEnabled =
+        await PosLocalDataSource.instance.isFortuneEnabled();
+    if (fortuneEnabled) {
+      final customs = await PosLocalDataSource.instance.getCustomFortunes();
+      final customTexts = customs
+          .map((e) => (e['text'] ?? '').toString())
+          .where((t) => t.trim().isNotEmpty)
+          .toList();
+      fortuneText = FortuneGenerator.generate(customFortunes: customTexts);
+    }
+
     final receiptNum = await _repository.createOrder(
       shiftId: shiftId,
       items: itemsSnapshot,
@@ -609,7 +625,8 @@ class PosController extends ChangeNotifier {
       grandTotalLabel: 'ДО СПЛАТИ:',
       grandTotalValue: MoneyFormatter.format(totalSnapshot),
       paymentMethodText: _formatPaymentLabel(methodSnapshot),
-      footerNote: 'Дякуємо за візит до OSNOVA!',
+      fortuneText: fortuneText,
+      footerNote: 'Дякуємо, що завітали в OSNOVA!',
       showSocials: true,
     );
 
@@ -736,7 +753,6 @@ class PosController extends ChangeNotifier {
         shiftId: shiftId,
         closingCash: expectedDrawer,
       );
-      // Автоматично відправляємо Z-звіт команді в Telegram
       await OsnovaTelegramService.instance.notifyZReport(lastStandardZReport!);
     }
 

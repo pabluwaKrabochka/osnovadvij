@@ -21,6 +21,7 @@ class OsnovaBrandLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPrinter = printerIp != null && printerIp!.isNotEmpty;
+    final isNeon = OsnovaTheme.isNeon;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -31,17 +32,26 @@ class OsnovaBrandLogo extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: OsnovaTheme.bgDark,
+              color: OsnovaTheme.bgDeep,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: OsnovaTheme.gold.withValues(alpha: 0.65),
-                width: 1.2,
+                color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+                    .withValues(alpha: isNeon ? 0.85 : 0.65),
+                width: isNeon ? 1.4 : 1.2,
               ),
+              boxShadow: isNeon
+                  ? [
+                      BoxShadow(
+                        color: OsnovaTheme.neonGlow.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                      ),
+                    ]
+                  : null,
             ),
-            child: const Text(
+            child: Text(
               'OSNOVA',
               style: TextStyle(
-                color: OsnovaTheme.creamText,
+                color: isNeon ? OsnovaTheme.goldBright : OsnovaTheme.creamText,
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
                 letterSpacing: 2.0,
@@ -66,7 +76,7 @@ class OsnovaBrandLogo extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 14,
                     color: OsnovaTheme.gold,
@@ -77,7 +87,7 @@ class OsnovaBrandLogo extends StatelessWidget {
                       'Каса: ${MoneyFormatter.format(cashInDrawer)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.goldBright,
                         fontWeight: FontWeight.w700,
                         fontSize: 12.5,
@@ -85,7 +95,7 @@ class OsnovaBrandLogo extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.edit_outlined,
                     size: 13,
                     color: OsnovaTheme.sageMuted,

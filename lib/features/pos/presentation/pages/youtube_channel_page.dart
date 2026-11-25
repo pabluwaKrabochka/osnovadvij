@@ -7,7 +7,7 @@ import '../../../../core/theme/osnova_theme.dart';
 class YoutubeChannelPage extends StatefulWidget {
   final String channelUrl;
 
-  const YoutubeChannelPage({
+   YoutubeChannelPage({
     super.key,
     this.channelUrl = 'https://www.youtube.com/@OSNOVA76.3',
   });
@@ -136,24 +136,24 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: OsnovaTheme.surfaceElevated,
                         foregroundColor: OsnovaTheme.creamText,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding:  EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
+                      icon:  Icon(
                         Icons.point_of_sale_rounded,
                         size: 18,
                         color: OsnovaTheme.gold,
                       ),
-                      label: const Text(
+                      label:  Text(
                         'До каси',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                     SizedBox(width: 14),
 
                     // Фірмовий бейдж каналу OSNOVA YouTube
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding:  EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(20),
@@ -161,7 +161,7 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                           color: OsnovaTheme.gold.withValues(alpha: 0.45),
                         ),
                       ),
-                      child: const Row(
+                      child:  Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
@@ -195,7 +195,7 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                       await _updateNavigationState();
                     },
                   ),
-                  const SizedBox(width: 6),
+                   SizedBox(width: 6),
                   _BrowserNavButton(
                     icon: Icons.arrow_forward_ios_rounded,
                     tooltip: 'Вперед',
@@ -205,46 +205,46 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                       await _updateNavigationState();
                     },
                   ),
-                  const SizedBox(width: 6),
+                   SizedBox(width: 6),
                   _BrowserNavButton(
                     icon: Icons.home_rounded,
                     tooltip: 'На головну каналу @OSNOVA76.3',
                     enabled: true,
                     onTap: () => _webController.loadRequest(Uri.parse(widget.channelUrl)),
                   ),
-                  const SizedBox(width: 6),
+                   SizedBox(width: 6),
                   _BrowserNavButton(
                     icon: Icons.refresh_rounded,
                     tooltip: 'Оновити сторінку',
                     enabled: true,
                     onTap: () => _webController.reload(),
                   ),
-                  const SizedBox(width: 10),
+                   SizedBox(width: 10),
 
                   // Режим "Кінозал" для перегляду відео на весь екран
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: OsnovaTheme.goldBright,
                       side: BorderSide(color: OsnovaTheme.gold.withValues(alpha: 0.6)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding:  EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     ),
                     onPressed: _toggleTheaterMode,
-                    icon: const Icon(Icons.fullscreen_rounded, size: 20),
-                    label: const Text(
+                    icon:  Icon(Icons.fullscreen_rounded, size: 20),
+                    label:  Text(
                       'Кінозал',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                   SizedBox(width: 12),
                 ],
                 bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(3),
+                  preferredSize:  Size.fromHeight(3),
                   child: _loadingProgress < 1.0
                       ? LinearProgressIndicator(
                           value: _loadingProgress,
                           minHeight: 3,
                           backgroundColor: OsnovaTheme.surfaceCard,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
+                          valueColor:  AlwaysStoppedAnimation<Color>(
                             OsnovaTheme.goldBright,
                           ),
                         )
@@ -267,7 +267,7 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(18),
+                      padding:  EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         color: OsnovaTheme.surfaceCard,
                         shape: BoxShape.circle,
@@ -282,14 +282,14 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child:  Icon(
                         Icons.play_arrow_rounded,
                         color: Color(0xFFFF0033),
                         size: 42,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
+                     SizedBox(height: 16),
+                     Text(
                       'Завантаження каналу OSNOVA...',
                       style: TextStyle(
                         color: OsnovaTheme.goldBright,
@@ -297,8 +297,8 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                     SizedBox(height: 6),
+                     Text(
                       'youtube.com/@OSNOVA76.3',
                       style: TextStyle(
                         color: OsnovaTheme.sageMuted,
@@ -322,7 +322,7 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                       borderRadius: BorderRadius.circular(24),
                       onTap: _toggleTheaterMode,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding:  EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
                         ),
@@ -332,7 +332,7 @@ class _YoutubeChannelPageState extends State<YoutubeChannelPage> {
                             color: OsnovaTheme.gold.withValues(alpha: 0.6),
                           ),
                         ),
-                        child: const Row(
+                        child:  Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
@@ -369,7 +369,7 @@ class _BrowserNavButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
-  const _BrowserNavButton({
+   _BrowserNavButton({
     required this.icon,
     required this.tooltip,
     required this.enabled,

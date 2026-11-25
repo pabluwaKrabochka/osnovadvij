@@ -18,7 +18,7 @@ class Oplata24Dialogs {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
+      labelStyle: TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
       hintStyle: TextStyle(
         color: OsnovaTheme.sageMuted.withValues(alpha: 0.55),
         fontSize: 12.5,
@@ -43,7 +43,7 @@ class Oplata24Dialogs {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
-        borderSide: const BorderSide(color: OsnovaTheme.goldBright, width: 1.5),
+        borderSide: BorderSide(color: OsnovaTheme.goldBright, width: 1.5),
       ),
     );
   }
@@ -90,22 +90,22 @@ class Oplata24Dialogs {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [
                                   OsnovaTheme.liveGreen,
-                                  Color(0xFF1F9D55),
+                                  const Color(0xFF1F9D55),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(13),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.contactless_rounded,
                               color: OsnovaTheme.bgDark,
                               size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -130,7 +130,7 @@ class Oplata24Dialogs {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(ctx).pop(),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close_rounded,
                               color: OsnovaTheme.sageMuted,
                             ),
@@ -151,14 +151,14 @@ class Oplata24Dialogs {
                             color: OsnovaTheme.liveGreen.withValues(alpha: 0.35),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.info_outline_rounded,
                               color: OsnovaTheme.liveGreen,
                               size: 20,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'Вкажіть ключі з кабінету terminal.pb.ua та номер телефону касира, на якому запущено застосунок «Термінал» ПриватБанку.',
@@ -178,7 +178,7 @@ class Oplata24Dialogs {
                       TextField(
                         controller: phoneCtrl,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.creamText,
                           fontWeight: FontWeight.w700,
                         ),
@@ -191,7 +191,7 @@ class Oplata24Dialogs {
                       const SizedBox(height: 12),
                       TextField(
                         controller: clientTokenCtrl,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.creamText,
                           fontSize: 13,
                         ),
@@ -203,7 +203,7 @@ class Oplata24Dialogs {
                       const SizedBox(height: 12),
                       TextField(
                         controller: retailerIdCtrl,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.creamText,
                           fontSize: 13,
                         ),
@@ -218,7 +218,7 @@ class Oplata24Dialogs {
                           Expanded(
                             child: TextField(
                               controller: clidCtrl,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: OsnovaTheme.creamText,
                                 fontSize: 13,
                               ),
@@ -233,7 +233,7 @@ class Oplata24Dialogs {
                             child: TextField(
                               controller: secretCtrl,
                               obscureText: obscureSecret,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: OsnovaTheme.creamText,
                                 fontSize: 13,
                               ),
@@ -265,7 +265,7 @@ class Oplata24Dialogs {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text(
+                            child: Text(
                               'Скасувати',
                               style: TextStyle(color: OsnovaTheme.sageMuted),
                             ),
@@ -301,8 +301,8 @@ class Oplata24Dialogs {
                                     );
                                   }
                                 },
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 18,
                                     vertical: 13,
                                   ),
@@ -314,7 +314,7 @@ class Oplata24Dialogs {
                                         size: 19,
                                         color: OsnovaTheme.bgDark,
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'Зберегти ключі',
                                         style: TextStyle(
@@ -534,7 +534,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                         _pollTimer?.cancel();
                         Navigator.of(context).pop(null);
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         color: OsnovaTheme.sageMuted,
                       ),
@@ -624,7 +624,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'СУМА ДО СПЛАТИ',
                       style: TextStyle(
                         color: OsnovaTheme.sageMuted,
@@ -636,7 +636,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                     const SizedBox(height: 4),
                     Text(
                       amountText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.goldBright,
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
@@ -646,7 +646,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                       const SizedBox(height: 4),
                       Text(
                         'Термінал касира: +$phone',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.sageMuted,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -672,7 +672,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                   child: Text(
                     _errorMessage!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: OsnovaTheme.creamText,
                       fontSize: 13,
                     ),
@@ -682,7 +682,7 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                 Text(
                   _statusSubtitle,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: OsnovaTheme.creamText,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -692,10 +692,10 @@ class _Oplata24WaitingDialogState extends State<_Oplata24WaitingDialog>
                 if (_isInitializing || !_isPaid)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: const LinearProgressIndicator(
+                    child: LinearProgressIndicator(
                       minHeight: 5,
                       color: OsnovaTheme.liveGreen,
-                      backgroundColor: Color(0xFF0A1914),
+                      backgroundColor: const Color(0xFF0A1914),
                     ),
                   ),
               ],

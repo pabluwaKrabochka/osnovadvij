@@ -20,26 +20,35 @@ class CartPanel extends StatelessWidget {
     final isCartEmpty = controller.cart.isEmpty;
     final totalFormatted = MoneyFormatter.format(controller.cartTotal);
     final isOplata24 = controller.paymentMethod == 'oplata24';
+    final isNeon = OsnovaTheme.isNeon;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(4, 8, 12, 12),
       decoration: BoxDecoration(
-        color: OsnovaTheme.bgDark.withValues(alpha: 0.78),
+        color: OsnovaTheme.bgDark.withValues(alpha: 0.84),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: OsnovaTheme.gold.withValues(alpha: 0.32),
-          width: 1.1,
+          color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+              .withValues(alpha: isNeon ? 0.55 : 0.32),
+          width: isNeon ? 1.3 : 1.1,
         ),
+        boxShadow: isNeon
+            ? [
+                BoxShadow(
+                  color: OsnovaTheme.neonGlow.withValues(alpha: 0.14),
+                  blurRadius: 16,
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Заголовок кошика
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 10, 6),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'ПОТОЧНЕ ЗАМОВЛЕННЯ',
                     style: TextStyle(
@@ -58,7 +67,7 @@ class CartPanel extends StatelessWidget {
                       HapticFeedback.lightImpact();
                       controller.clearCart();
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_sweep_outlined,
                       color: OsnovaTheme.sageMuted,
                       size: 20,
@@ -67,8 +76,6 @@ class CartPanel extends StatelessWidget {
               ],
             ),
           ),
-
-          // Декоративний розділювач у стилі OSNOVA
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
@@ -82,9 +89,9 @@ class CartPanel extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Icon(
-                    Icons.eco_outlined,
+                    isNeon ? Icons.bolt_rounded : Icons.eco_outlined,
                     size: 15,
-                    color: OsnovaTheme.gold.withValues(alpha: 0.75),
+                    color: OsnovaTheme.gold.withValues(alpha: 0.85),
                   ),
                 ),
                 Expanded(
@@ -96,8 +103,6 @@ class CartPanel extends StatelessWidget {
               ],
             ),
           ),
-
-          // 2. Список позицій або порожній стан
           Expanded(
             child: isCartEmpty
                 ? Center(
@@ -111,19 +116,20 @@ class CartPanel extends StatelessWidget {
                             height: 58,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: OsnovaTheme.surfaceCard.withValues(alpha: 0.8),
+                              color:
+                                  OsnovaTheme.surfaceCard.withValues(alpha: 0.8),
                               border: Border.all(
-                                color: OsnovaTheme.gold.withValues(alpha: 0.25),
+                                color: OsnovaTheme.gold.withValues(alpha: 0.28),
                               ),
                             ),
                             child: Icon(
                               Icons.receipt_long_outlined,
                               size: 28,
-                              color: OsnovaTheme.gold.withValues(alpha: 0.65),
+                              color: OsnovaTheme.gold.withValues(alpha: 0.72),
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'Оберіть позиції з меню OSNOVA',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -156,30 +162,27 @@ class CartPanel extends StatelessWidget {
                     },
                   ),
           ),
-
-          // 3. Нижня панель оплати та друку
           Container(
             margin: const EdgeInsets.all(10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: OsnovaTheme.surfaceCard.withValues(alpha: 0.88),
+              color: OsnovaTheme.surfaceCard.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: OsnovaTheme.gold.withValues(alpha: 0.28),
+                color: OsnovaTheme.gold.withValues(alpha: 0.32),
               ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Перемикач способу оплати: Картка / Оплата24 / Готівка
                 Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: OsnovaTheme.bgDark.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: OsnovaTheme.gold.withValues(alpha: 0.25),
+                      color: OsnovaTheme.gold.withValues(alpha: 0.28),
                     ),
                   ),
                   child: Row(
@@ -225,10 +228,7 @@ class CartPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                // Перемикач друку паперового чека
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -238,7 +238,7 @@ class CartPanel extends StatelessWidget {
                     color: OsnovaTheme.bgDark.withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: OsnovaTheme.gold.withValues(alpha: 0.16),
+                      color: OsnovaTheme.gold.withValues(alpha: 0.18),
                     ),
                   ),
                   child: Row(
@@ -276,7 +276,8 @@ class CartPanel extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: OsnovaTheme.sageMuted.withValues(alpha: 0.65),
+                                color: OsnovaTheme.sageMuted
+                                    .withValues(alpha: 0.65),
                                 fontSize: 11,
                               ),
                             ),
@@ -294,10 +295,7 @@ class CartPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                // Кнопка фінальної оплати
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: isCartEmpty
@@ -321,8 +319,8 @@ class CartPanel extends StatelessWidget {
                               color: (isOplata24
                                       ? OsnovaTheme.liveGreen
                                       : OsnovaTheme.gold)
-                                  .withValues(alpha: 0.28),
-                              blurRadius: 12,
+                                  .withValues(alpha: isNeon ? 0.45 : 0.28),
+                              blurRadius: isNeon ? 16 : 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -346,7 +344,7 @@ class CartPanel extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (!isCartEmpty && isOplata24) ...[
-                              const Icon(
+                              Icon(
                                 Icons.contactless_rounded,
                                 color: OsnovaTheme.bgDark,
                                 size: 20,
@@ -362,7 +360,8 @@ class CartPanel extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: isCartEmpty
-                                      ? OsnovaTheme.sageMuted.withValues(alpha: 0.55)
+                                      ? OsnovaTheme.sageMuted
+                                          .withValues(alpha: 0.55)
                                       : OsnovaTheme.bgDark,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15.5,
@@ -488,10 +487,10 @@ class _CartItemTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: OsnovaTheme.surfaceCard.withValues(alpha: 0.72),
+        color: OsnovaTheme.surfaceCard.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: OsnovaTheme.gold.withValues(alpha: 0.2),
+          color: OsnovaTheme.gold.withValues(alpha: 0.24),
         ),
       ),
       child: Row(
@@ -504,7 +503,7 @@ class _CartItemTile extends StatelessWidget {
                   item.product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: OsnovaTheme.creamText,
                     fontWeight: FontWeight.w700,
                     fontSize: 13.5,
@@ -513,7 +512,7 @@ class _CartItemTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   '${MoneyFormatter.format(item.product.price)} × ${item.qty} = ${MoneyFormatter.format(item.totalPrice)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: OsnovaTheme.goldBright,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
@@ -528,7 +527,7 @@ class _CartItemTile extends StatelessWidget {
               color: OsnovaTheme.bgDark.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: OsnovaTheme.gold.withValues(alpha: 0.25),
+                color: OsnovaTheme.gold.withValues(alpha: 0.28),
               ),
             ),
             child: Row(
@@ -556,7 +555,7 @@ class _CartItemTile extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     '${item.qty}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: OsnovaTheme.creamText,
                       fontWeight: FontWeight.w800,
                       fontSize: 13.5,
@@ -571,7 +570,7 @@ class _CartItemTile extends StatelessWidget {
                   ),
                   padding: EdgeInsets.zero,
                   onPressed: onIncrement,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.add_rounded,
                     size: 16,
                     color: OsnovaTheme.gold,

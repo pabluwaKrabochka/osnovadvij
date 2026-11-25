@@ -221,7 +221,7 @@ class _CashOperationDialogState extends State<CashOperationDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'КАСОВА ОПЕРАЦІЯ (ДПС / POSTER)',
                 style: TextStyle(
                   color: OsnovaTheme.goldBright,
@@ -292,7 +292,7 @@ class _CashOperationDialogState extends State<CashOperationDialog> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
-                style: const TextStyle(
+                style: TextStyle(
                   color: OsnovaTheme.goldBright,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
@@ -317,7 +317,7 @@ class _CashOperationDialogState extends State<CashOperationDialog> {
                     backgroundColor: OsnovaTheme.bgDark,
                     label: Text(
                       r,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.creamText,
                         fontSize: 12,
                       ),
@@ -330,7 +330,7 @@ class _CashOperationDialogState extends State<CashOperationDialog> {
 
               TextField(
                 controller: _reasonCtrl,
-                style: const TextStyle(color: OsnovaTheme.creamText),
+                style: TextStyle(color: OsnovaTheme.creamText),
                 decoration: InputDecoration(
                   labelText: 'Коментар / призначення',
                   filled: true,
@@ -400,7 +400,7 @@ class StandardZReportView extends StatelessWidget {
             children: [
               Text(
                 'Z-ЗВІТ №${report.shiftNumber}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: OsnovaTheme.goldBright,
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -415,7 +415,7 @@ class StandardZReportView extends StatelessWidget {
                     color: OsnovaTheme.gold.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
+                  child: Text(
                     'АВТО 23:50',
                     style: TextStyle(
                       color: OsnovaTheme.goldBright,
@@ -429,19 +429,32 @@ class StandardZReportView extends StatelessWidget {
           const Divider(height: 18),
           _row('Залишок на початок зміни', report.openingCashCents),
           _row('Виручка готівкою', report.cashSalesCents),
-          _row('Безготівка (Термінал / Оплата24)',
-              report.cardTerminalSalesCents),
-          _row('Загальний обіг (${report.receiptsCount} чеків)',
-              report.totalTurnoverCents,
-              bold: true),
+          _row(
+            'Безготівка (Термінал / Оплата24)',
+            report.cardTerminalSalesCents,
+          ),
+          _row(
+            'Загальний обіг (${report.receiptsCount} чеків)',
+            report.totalTurnoverCents,
+            bold: true,
+          ),
           const Divider(height: 18),
-          _row('+ Службове внесення', report.serviceInTotalCents,
-              valueColor: OsnovaTheme.liveGreen),
-          _row('- Службове винесення (інкасація)', report.serviceOutTotalCents,
-              valueColor: Colors.orangeAccent),
+          _row(
+            '+ Службове внесення',
+            report.serviceInTotalCents,
+            valueColor: OsnovaTheme.liveGreen,
+          ),
+          _row(
+            '- Службове винесення (інкасація)',
+            report.serviceOutTotalCents,
+            valueColor: Colors.orangeAccent,
+          ),
           if (report.expensesTotalCents > 0)
-            _row('- Витрати з каси', report.expensesTotalCents,
-                valueColor: Colors.redAccent),
+            _row(
+              '- Витрати з каси',
+              report.expensesTotalCents,
+              valueColor: Colors.redAccent,
+            ),
           if (report.operations.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...report.operations.map((op) {
@@ -450,7 +463,7 @@ class StandardZReportView extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Text(
                   '  • ${_fmtTime(op.createdAt)} | $sign${MoneyFormatter.format(op.amountCents)} — ${op.reason}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: OsnovaTheme.sageMuted,
                     fontSize: 11.5,
                   ),

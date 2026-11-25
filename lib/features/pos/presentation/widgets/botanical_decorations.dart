@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/osnova_theme.dart';
 
-/// Живий ботанічний фон із м'яким дихаючим світлом та золотим пилком
+/// Живий ботанічний фон із м'яким дихаючим світлом та неоновим / золотим пилком
 class BotanicalBackground extends StatefulWidget {
   const BotanicalBackground({super.key});
 
@@ -33,10 +33,13 @@ class _BotanicalBackgroundState extends State<BotanicalBackground>
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: AnimatedBuilder(
-        animation: _ambientCtrl,
+        animation: Listenable.merge([_ambientCtrl, OsnovaTheme.themeNotifier]),
         builder: (context, _) {
           return CustomPaint(
-            painter: _BotanicalLeavesPainter(progress: _ambientCtrl.value),
+            painter: _BotanicalLeavesPainter(
+              progress: _ambientCtrl.value,
+              palette: OsnovaTheme.current,
+            ),
             size: Size.infinite,
           );
         },
@@ -47,39 +50,46 @@ class _BotanicalBackgroundState extends State<BotanicalBackground>
 
 class _BotanicalLeavesPainter extends CustomPainter {
   final double progress;
+  final OsnovaPalette palette;
 
-  _BotanicalLeavesPainter({required this.progress});
+  _BotanicalLeavesPainter({
+    required this.progress,
+    required this.palette,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final breath = 0.5 + 0.5 * math.sin(progress * 2 * math.pi);
 
-    // М'який атмосферний градієнт у центрі меню
     final spotlightRect = Rect.fromLTWH(0, 0, size.width * 0.68, size.height);
     final spotlightPaint = Paint()
       ..shader = RadialGradient(
         center: const Alignment(-0.15, -0.1),
         radius: 0.95 + 0.08 * breath,
         colors: [
-          const Color(0xFF1B4335).withValues(alpha: 0.24 + 0.08 * breath),
-          OsnovaTheme.gold.withValues(alpha: 0.03 + 0.02 * breath),
+          palette.surfaceElevated.withValues(
+            alpha: palette.isNeon ? 0.32 + 0.10 * breath : 0.24 + 0.08 * breath,
+          ),
+          palette.neonGlow.withValues(
+            alpha: palette.isNeon ? 0.06 + 0.04 * breath : 0.03 + 0.02 * breath,
+          ),
           Colors.transparent,
         ],
       ).createShader(spotlightRect);
     canvas.drawRect(spotlightRect, spotlightPaint);
 
     final leafFill = Paint()
-      ..color = const Color(0xFF173B2E).withValues(alpha: 0.36)
+      ..color = palette.surfaceCard.withValues(alpha: palette.isNeon ? 0.44 : 0.36)
       ..style = PaintingStyle.fill;
 
     final leafStroke = Paint()
-      ..color = OsnovaTheme.gold.withValues(alpha: 0.11 + 0.04 * breath)
+      ..color = (palette.isNeon ? palette.neonGlow : palette.gold)
+          .withValues(alpha: (palette.isNeon ? 0.22 : 0.11) + 0.05 * breath)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = palette.isNeon ? 1.15 : 1.0;
 
     final sway = math.sin(progress * 2 * math.pi) * 0.025;
 
-    // Нижній лівий кут
     _drawSprig(
       canvas: canvas,
       origin: Offset(-18, size.height + 10),
@@ -90,7 +100,6 @@ class _BotanicalLeavesPainter extends CustomPainter {
       stroke: leafStroke,
     );
 
-    // Верхній лівий кут
     _drawSprig(
       canvas: canvas,
       origin: const Offset(-10, -10),
@@ -101,7 +110,6 @@ class _BotanicalLeavesPainter extends CustomPainter {
       stroke: leafStroke,
     );
 
-    // Нижній правий кут
     _drawSprig(
       canvas: canvas,
       origin: Offset(size.width * 0.64, size.height + 12),
@@ -112,7 +120,6 @@ class _BotanicalLeavesPainter extends CustomPainter {
       stroke: leafStroke,
     );
 
-    // Делікатні плаваючі золоті частинки
     final dustPaint = Paint()..style = PaintingStyle.fill;
     for (int i = 0; i < 14; i++) {
       final seed = i * 1.6180339;
@@ -121,7 +128,8 @@ class _BotanicalLeavesPainter extends CustomPainter {
       final floatY = basePy - ((progress + seed) % 1.0) * 45;
       final twinkle = 0.5 + 0.5 * math.sin((progress * 2 * math.pi) + i * 1.3);
 
-      dustPaint.color = OsnovaTheme.goldBright.withValues(alpha: 0.05 + 0.12 * twinkle);
+      dustPaint.color = (palette.isNeon ? palette.neonGlow : palette.goldBright)
+          .withValues(alpha: (palette.isNeon ? 0.12 : 0.05) + 0.14 * twinkle);
       canvas.drawCircle(
         Offset(px + math.sin(progress * 2 * math.pi + i) * 6, floatY),
         1.3 + (i % 2) * 0.7,
@@ -176,11 +184,11 @@ class _BotanicalLeavesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BotanicalLeavesPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.palette != palette;
   }
 }
 
-/// Подвійна золота вінтажна рамка зі ступінчастими кутами
+/// Подвійна фірмова рамка зі ступінчастими кутами та неоновим світінням у нічних темах
 class OsnovaMenuFrame extends StatelessWidget {
   final Widget child;
   final Color? borderColor;
@@ -201,6 +209,8 @@ class OsnovaMenuFrame extends StatelessWidget {
       foregroundPainter: _DoubleVintageFramePainter(
         color: borderColor ?? OsnovaTheme.gold.withValues(alpha: 0.34),
         cornerSize: cornerSize,
+        isNeon: OsnovaTheme.isNeon,
+        neonColor: OsnovaTheme.neonGlow,
       ),
       child: Padding(
         padding: padding,
@@ -213,25 +223,19 @@ class OsnovaMenuFrame extends StatelessWidget {
 class _DoubleVintageFramePainter extends CustomPainter {
   final Color color;
   final double cornerSize;
+  final bool isNeon;
+  final Color neonColor;
 
   _DoubleVintageFramePainter({
     required this.color,
     required this.cornerSize,
+    required this.isNeon,
+    required this.neonColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= cornerSize * 3 || size.height <= cornerSize * 3) return;
-
-    final outerPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    final innerPaint = Paint()
-      ..color = color.withValues(alpha: (color.a * 0.65).clamp(0.0, 1.0))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
 
     final outerPath = _buildSteppedRectPath(
       Rect.fromLTWH(1.5, 1.5, size.width - 3, size.height - 3),
@@ -241,6 +245,25 @@ class _DoubleVintageFramePainter extends CustomPainter {
       Rect.fromLTWH(5.0, 5.0, size.width - 10, size.height - 10),
       math.max(4.0, cornerSize - 2.5),
     );
+
+    if (isNeon) {
+      final glowPaint = Paint()
+        ..color = neonColor.withValues(alpha: (color.a * 0.55).clamp(0.18, 0.65))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.2
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.5);
+      canvas.drawPath(outerPath, glowPaint);
+    }
+
+    final outerPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isNeon ? 1.15 : 1.0;
+
+    final innerPaint = Paint()
+      ..color = color.withValues(alpha: (color.a * 0.65).clamp(0.0, 1.0))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.85;
 
     canvas.drawPath(outerPath, outerPaint);
     canvas.drawPath(innerPath, innerPaint);
@@ -265,11 +288,14 @@ class _DoubleVintageFramePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DoubleVintageFramePainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.cornerSize != cornerSize;
+    return oldDelegate.color != color ||
+        oldDelegate.cornerSize != cornerSize ||
+        oldDelegate.isNeon != isNeon ||
+        oldDelegate.neonColor != neonColor;
   }
 }
 
-/// Золотий розділювач із ботанічною гілочкою по центру
+/// Розділювач із ботанічною гілочкою по центру
 class GoldLeafDivider extends StatelessWidget {
   final double height;
 
@@ -281,22 +307,33 @@ class GoldLeafDivider extends StatelessWidget {
       height: height,
       width: double.infinity,
       child: CustomPaint(
-        painter: _GoldLeafDividerPainter(),
+        painter: _GoldLeafDividerPainter(
+          primary: OsnovaTheme.gold,
+          bright: OsnovaTheme.goldBright,
+        ),
       ),
     );
   }
 }
 
 class _GoldLeafDividerPainter extends CustomPainter {
+  final Color primary;
+  final Color bright;
+
+  _GoldLeafDividerPainter({
+    required this.primary,
+    required this.bright,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final linePaint = Paint()
-      ..color = OsnovaTheme.gold.withValues(alpha: 0.42)
+      ..color = primary.withValues(alpha: 0.42)
       ..strokeWidth = 1.0;
 
     final leafPaint = Paint()
-      ..color = OsnovaTheme.goldBright.withValues(alpha: 0.85)
+      ..color = bright.withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
 
     canvas.drawLine(
@@ -333,5 +370,6 @@ class _GoldLeafDividerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GoldLeafDividerPainter oldDelegate) =>
+      oldDelegate.primary != primary || oldDelegate.bright != bright;
 }

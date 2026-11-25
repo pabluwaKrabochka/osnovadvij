@@ -36,6 +36,9 @@ class _PurchasesPageState extends State<PurchasesPage> {
   String? _selectedSupplierFilter;
 
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _analyticsScrollCtrl = ScrollController();
+  final ScrollController _invoicesScrollCtrl = ScrollController();
+
   DbRowList _purchases = [];
   final Set<int> _expandedIds = {};
 
@@ -51,6 +54,8 @@ class _PurchasesPageState extends State<PurchasesPage> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _analyticsScrollCtrl.dispose();
+    _invoicesScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -147,10 +152,10 @@ class _PurchasesPageState extends State<PurchasesPage> {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: OsnovaTheme.gold.withValues(alpha: 0.4)),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-            SizedBox(width: 10),
+            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+            const SizedBox(width: 10),
             Text(
               'Видалити накладну?',
               style: TextStyle(
@@ -163,12 +168,12 @@ class _PurchasesPageState extends State<PurchasesPage> {
         ),
         content: Text(
           'Накладну від «$supplier» буде видалено без можливості відновлення.',
-          style: const TextStyle(color: OsnovaTheme.sageMuted, fontSize: 13.5),
+          style: TextStyle(color: OsnovaTheme.sageMuted, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
+            child: Text(
               'Скасувати',
               style: TextStyle(color: OsnovaTheme.sageMuted),
             ),
@@ -301,8 +306,9 @@ class _PurchasesPageState extends State<PurchasesPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A1D15),
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: OsnovaTheme.gold),
+          icon: Icon(Icons.arrow_back_rounded, color: OsnovaTheme.gold),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 4,
@@ -314,14 +320,14 @@ class _PurchasesPageState extends State<PurchasesPage> {
                 gradient: OsnovaTheme.goldGradient,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.receipt_long_rounded,
                 color: OsnovaTheme.bgDark,
                 size: 19,
               ),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -346,18 +352,35 @@ class _PurchasesPageState extends State<PurchasesPage> {
             ),
           ],
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.5),
+          child: Container(
+            height: 1.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  OsnovaTheme.gold.withValues(alpha: 0.5),
+                  OsnovaTheme.goldBright.withValues(alpha: 0.85),
+                  OsnovaTheme.gold.withValues(alpha: 0.5),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
         actions: [
           if (!isCurrentMonth)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: TextButton.icon(
                 onPressed: _jumpToCurrentMonth,
-                icon: const Icon(
+                icon: Icon(
                   Icons.today_rounded,
                   size: 16,
                   color: OsnovaTheme.goldBright,
                 ),
-                label: const Text(
+                label: Text(
                   'Поточний місяць',
                   style: TextStyle(
                     color: OsnovaTheme.goldBright,
@@ -383,7 +406,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _changeMonth(-1),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_left_rounded,
                     color: OsnovaTheme.goldBright,
                   ),
@@ -392,7 +415,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_month_rounded,
                         size: 15,
                         color: OsnovaTheme.gold,
@@ -400,7 +423,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                       const SizedBox(width: 6),
                       Text(
                         '${_monthNames[_selectedMonth - 1]} $_selectedYear',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.creamText,
                           fontWeight: FontWeight.w800,
                           fontSize: 13.5,
@@ -412,7 +435,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _changeMonth(1),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_right_rounded,
                     color: OsnovaTheme.goldBright,
                   ),
@@ -443,7 +466,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: OsnovaTheme.gold),
             )
           : Padding(
@@ -451,310 +474,124 @@ class _PurchasesPageState extends State<PurchasesPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ЛІВА КОЛОНКА: Преміальна аналітика витрат та постачальників
+                  // ЛІВА КОЛОНКА: Преміальна аналітика витрат та постачальників + золотий скрол-індикатор
                   Expanded(
                     flex: 36,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Hero-картка загальних витрат
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF143126),
-                                  Color(0xFF0A1914),
+                    child: _OsnovaGoldScrollbar(
+                      controller: _analyticsScrollCtrl,
+                      child: SingleChildScrollView(
+                        controller: _analyticsScrollCtrl,
+                        padding: const EdgeInsets.only(right: 12, bottom: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Hero-картка загальних витрат
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF143126),
+                                    Color(0xFF0A1914),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color:
+                                      OsnovaTheme.gold.withValues(alpha: 0.48),
+                                  width: 1.2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.32),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: OsnovaTheme.gold.withValues(alpha: 0.48),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.32),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  right: -6,
-                                  top: -8,
-                                  child: Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    size: 74,
-                                    color:
-                                        OsnovaTheme.gold.withValues(alpha: 0.08),
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    right: -6,
+                                    top: -8,
+                                    child: Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      size: 74,
+                                      color: OsnovaTheme.gold
+                                          .withValues(alpha: 0.08),
+                                    ),
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: OsnovaTheme.goldBright,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'ВИТРАЧЕНО ЗА ${_monthNames[_selectedMonth - 1].toUpperCase()}',
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.sageMuted,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1.0,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      MoneyFormatter.format(monthTotal),
-                                      style: const TextStyle(
-                                        color: OsnovaTheme.goldBright,
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.4,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    Row(
-                                      children: [
-                                        _StatPill(
-                                          label: 'Накладних',
-                                          value: '${_purchases.length}',
-                                          icon: Icons.description_outlined,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _StatPill(
-                                          label: 'Позицій',
-                                          value: '$totalItemsCount',
-                                          icon: Icons.inventory_2_outlined,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _StatPill(
-                                          label: 'Сер. чек',
-                                          value: MoneyFormatter.format(
-                                            avgInvoiceCents,
-                                          ),
-                                          icon: Icons.analytics_outlined,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          // Блок витрат за категоріями (інтерактивний фільтр)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: OsnovaTheme.surfaceCard
-                                  .withValues(alpha: 0.94),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: OsnovaTheme.gold.withValues(alpha: 0.32),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'СТРУКТУРА ЗА КАТЕГОРІЯМИ',
-                                      style: TextStyle(
-                                        color: OsnovaTheme.goldBright,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.85,
-                                      ),
-                                    ),
-                                    if (_selectedCategoryFilter != null)
-                                      GestureDetector(
-                                        onTap: () => setState(
-                                          () => _selectedCategoryFilter = null,
-                                        ),
-                                        child: const Text(
-                                          'Скинути',
-                                          style: TextStyle(
-                                            color: OsnovaTheme.liveGreen,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w800,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                if (sortedCategories.isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    child: Text(
-                                      'За цей місяць ще немає закупок.',
-                                      style: TextStyle(
-                                        color: OsnovaTheme.sageMuted,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ...sortedCategories.map((entry) {
-                                    final fraction = monthTotal > 0
-                                        ? entry.value / monthTotal
-                                        : 0.0;
-                                    final percent = (fraction * 100).round();
-                                    final isSelected =
-                                        _selectedCategoryFilter == entry.key;
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedCategoryFilter =
-                                                isSelected ? null : entry.key;
-                                          });
-                                        },
-                                        child: AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 180),
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? OsnovaTheme.gold
-                                                    .withValues(alpha: 0.16)
-                                                : const Color(0xFF0A1914)
-                                                    .withValues(alpha: 0.65),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? OsnovaTheme.goldBright
-                                                  : OsnovaTheme.gold
-                                                      .withValues(alpha: 0.16),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: OsnovaTheme.goldBright,
+                                              shape: BoxShape.circle,
                                             ),
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    _iconForCategory(entry.key),
-                                                    size: 15,
-                                                    color:
-                                                        OsnovaTheme.goldBright,
-                                                  ),
-                                                  const SizedBox(width: 7),
-                                                  Expanded(
-                                                    child: Text(
-                                                      entry.key,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        color: OsnovaTheme
-                                                            .creamText,
-                                                        fontSize: 12.5,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: OsnovaTheme
-                                                          .surfaceCard,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
-                                                    ),
-                                                    child: Text(
-                                                      '$percent%',
-                                                      style: const TextStyle(
-                                                        color: OsnovaTheme
-                                                            .sageMuted,
-                                                        fontSize: 10.5,
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    MoneyFormatter.format(
-                                                      entry.value,
-                                                    ),
-                                                    style: const TextStyle(
-                                                      color: OsnovaTheme
-                                                          .goldBright,
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 7),
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                child: LinearProgressIndicator(
-                                                  value: fraction,
-                                                  minHeight: 6,
-                                                  backgroundColor:
-                                                      OsnovaTheme.bgDark,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(
-                                                    isSelected
-                                                        ? OsnovaTheme.liveGreen
-                                                        : OsnovaTheme.gold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'ВИТРАЧЕНО ЗА ${_monthNames[_selectedMonth - 1].toUpperCase()}',
+                                            style: TextStyle(
+                                              color: OsnovaTheme.sageMuted,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 1.0,
+                                            ),
                                           ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        MoneyFormatter.format(monthTotal),
+                                        style: TextStyle(
+                                          color: OsnovaTheme.goldBright,
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.4,
                                         ),
                                       ),
-                                    );
-                                  }),
-                              ],
+                                      const SizedBox(height: 14),
+                                      Row(
+                                        children: [
+                                          _StatPill(
+                                            label: 'Накладних',
+                                            value: '${_purchases.length}',
+                                            icon: Icons.description_outlined,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _StatPill(
+                                            label: 'Позицій',
+                                            value: '$totalItemsCount',
+                                            icon: Icons.inventory_2_outlined,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _StatPill(
+                                            label: 'Сер. чек',
+                                            value: MoneyFormatter.format(
+                                              avgInvoiceCents,
+                                            ),
+                                            icon: Icons.analytics_outlined,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
 
-                          // Блок постачальників місяця
-                          if (sortedSuppliers.isNotEmpty) ...[
                             const SizedBox(height: 14),
+
+                            // Блок витрат за категоріями (інтерактивний фільтр)
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
@@ -773,8 +610,8 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
-                                        'ПОСТАЧАЛЬНИКИ МІСЯЦЯ',
+                                      Text(
+                                        'СТРУКТУРА ЗА КАТЕГОРІЯМИ',
                                         style: TextStyle(
                                           color: OsnovaTheme.goldBright,
                                           fontSize: 12,
@@ -782,14 +619,14 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                           letterSpacing: 0.85,
                                         ),
                                       ),
-                                      if (_selectedSupplierFilter != null)
+                                      if (_selectedCategoryFilter != null)
                                         GestureDetector(
                                           onTap: () => setState(
                                             () =>
-                                                _selectedSupplierFilter = null,
+                                                _selectedCategoryFilter = null,
                                           ),
-                                          child: const Text(
-                                            'Всі',
+                                          child: Text(
+                                            'Скинути',
                                             style: TextStyle(
                                               color: OsnovaTheme.liveGreen,
                                               fontSize: 11.5,
@@ -801,55 +638,261 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                         ),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: sortedSuppliers.map((sup) {
+                                  const SizedBox(height: 12),
+                                  if (sortedCategories.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Text(
+                                        'За цей місяць ще немає закупок.',
+                                        style: TextStyle(
+                                          color: OsnovaTheme.sageMuted,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ...sortedCategories.map((entry) {
+                                      final fraction = monthTotal > 0
+                                          ? entry.value / monthTotal
+                                          : 0.0;
+                                      final percent = (fraction * 100).round();
                                       final isSelected =
-                                          _selectedSupplierFilter == sup.key;
-                                      return ChoiceChip(
-                                        label: Text(
-                                          '${sup.key} • ${MoneyFormatter.format(sup.value)}',
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? OsnovaTheme.bgDark
-                                                : OsnovaTheme.creamText,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 11.5,
+                                          _selectedCategoryFilter == entry.key;
+
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedCategoryFilter =
+                                                  isSelected ? null : entry.key;
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 180,
+                                            ),
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? OsnovaTheme.gold
+                                                      .withValues(alpha: 0.16)
+                                                  : const Color(0xFF0A1914)
+                                                      .withValues(alpha: 0.65),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? OsnovaTheme.goldBright
+                                                    : OsnovaTheme.gold
+                                                        .withValues(
+                                                        alpha: 0.16,
+                                                      ),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      _iconForCategory(
+                                                        entry.key,
+                                                      ),
+                                                      size: 15,
+                                                      color: OsnovaTheme
+                                                          .goldBright,
+                                                    ),
+                                                    const SizedBox(width: 7),
+                                                    Expanded(
+                                                      child: Text(
+                                                        entry.key,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: TextStyle(
+                                                          color: OsnovaTheme
+                                                              .creamText,
+                                                          fontSize: 12.5,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: OsnovaTheme
+                                                            .surfaceCard,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        '$percent%',
+                                                        style: TextStyle(
+                                                          color: OsnovaTheme
+                                                              .sageMuted,
+                                                          fontSize: 10.5,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      MoneyFormatter.format(
+                                                        entry.value,
+                                                      ),
+                                                      style: TextStyle(
+                                                        color: OsnovaTheme
+                                                            .goldBright,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 7),
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  child:
+                                                      LinearProgressIndicator(
+                                                    value: fraction,
+                                                    minHeight: 6,
+                                                    backgroundColor:
+                                                        OsnovaTheme.bgDark,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                            Color>(
+                                                      isSelected
+                                                          ? OsnovaTheme
+                                                              .liveGreen
+                                                          : OsnovaTheme.gold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                        selected: isSelected,
-                                        selectedColor: OsnovaTheme.gold,
-                                        backgroundColor:
-                                            const Color(0xFF0A1914),
-                                        side: BorderSide(
-                                          color: isSelected
-                                              ? OsnovaTheme.goldBright
-                                              : OsnovaTheme.gold
-                                                  .withValues(alpha: 0.28),
-                                        ),
-                                        onSelected: (_) {
-                                          setState(() {
-                                            _selectedSupplierFilter =
-                                                isSelected ? null : sup.key;
-                                          });
-                                        },
                                       );
-                                    }).toList(),
-                                  ),
+                                    }),
                                 ],
                               ),
                             ),
+
+                            // Блок постачальників місяця
+                            if (sortedSuppliers.isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: OsnovaTheme.surfaceCard
+                                      .withValues(alpha: 0.94),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color:
+                                        OsnovaTheme.gold.withValues(alpha: 0.32),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'ПОСТАЧАЛЬНИКИ МІСЯЦЯ',
+                                          style: TextStyle(
+                                            color: OsnovaTheme.goldBright,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.85,
+                                          ),
+                                        ),
+                                        if (_selectedSupplierFilter != null)
+                                          GestureDetector(
+                                            onTap: () => setState(
+                                              () => _selectedSupplierFilter =
+                                                  null,
+                                            ),
+                                            child: Text(
+                                              'Всі',
+                                              style: TextStyle(
+                                                color: OsnovaTheme.liveGreen,
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w800,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: sortedSuppliers.map((sup) {
+                                        final isSelected =
+                                            _selectedSupplierFilter == sup.key;
+                                        return ChoiceChip(
+                                          label: Text(
+                                            '${sup.key} • ${MoneyFormatter.format(sup.value)}',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? OsnovaTheme.bgDark
+                                                  : OsnovaTheme.creamText,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 11.5,
+                                            ),
+                                          ),
+                                          selected: isSelected,
+                                          selectedColor: OsnovaTheme.gold,
+                                          backgroundColor:
+                                              const Color(0xFF0A1914),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? OsnovaTheme.goldBright
+                                                : OsnovaTheme.gold
+                                                    .withValues(alpha: 0.28),
+                                          ),
+                                          onSelected: (_) {
+                                            setState(() {
+                                              _selectedSupplierFilter =
+                                                  isSelected ? null : sup.key;
+                                            });
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
 
-                  // ПРАВА КОЛОНКА: Пошук + Журнал накладних
+                  // ПРАВА КОЛОНКА: Пошук + Журнал накладних зі скрол-індикатором
                   Expanded(
                     flex: 64,
                     child: Column(
@@ -860,7 +903,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                             Expanded(
                               child: TextField(
                                 controller: _searchCtrl,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: OsnovaTheme.creamText,
                                   fontSize: 13.5,
                                 ),
@@ -872,7 +915,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                         .withValues(alpha: 0.7),
                                     fontSize: 13,
                                   ),
-                                  prefixIcon: const Icon(
+                                  prefixIcon: Icon(
                                     Icons.search_rounded,
                                     color: OsnovaTheme.goldBright,
                                   ),
@@ -898,7 +941,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                               ),
                                               child: Text(
                                                 'По позиціях: ${MoneyFormatter.format(matchedItemTotal)}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color: OsnovaTheme.liveGreen,
                                                   fontWeight: FontWeight.w800,
                                                   fontSize: 11.5,
@@ -906,7 +949,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                               ),
                                             ),
                                             IconButton(
-                                              icon: const Icon(
+                                              icon: Icon(
                                                 Icons.close_rounded,
                                                 size: 18,
                                                 color: OsnovaTheme.sageMuted,
@@ -943,7 +986,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
+                                    borderSide: BorderSide(
                                       color: OsnovaTheme.goldBright,
                                       width: 1.4,
                                     ),
@@ -981,7 +1024,9 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                   size: 19,
                                 ),
                                 label: Text(
-                                  allExpanded ? 'Згорнути всі' : 'Розгорнути всі',
+                                  allExpanded
+                                      ? 'Згорнути всі'
+                                      : 'Розгорнути всі',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12.5,
@@ -1001,7 +1046,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                             runSpacing: 6,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Активні фільтри:',
                                 style: TextStyle(
                                   color: OsnovaTheme.sageMuted,
@@ -1015,7 +1060,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                     'Постачальник: $_selectedSupplierFilter',
                                   ),
                                   backgroundColor: const Color(0xFF11261F),
-                                  labelStyle: const TextStyle(
+                                  labelStyle: TextStyle(
                                     color: OsnovaTheme.goldBright,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 11.5,
@@ -1031,7 +1076,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                     'Категорія: $_selectedCategoryFilter',
                                   ),
                                   backgroundColor: const Color(0xFF11261F),
-                                  labelStyle: const TextStyle(
+                                  labelStyle: TextStyle(
                                     color: OsnovaTheme.liveGreen,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 11.5,
@@ -1078,7 +1123,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                           ),
                                         ),
                                         const SizedBox(height: 14),
-                                        const Text(
+                                        Text(
                                           'Накладних за вибраними параметрами не знайдено',
                                           style: TextStyle(
                                             color: OsnovaTheme.creamText,
@@ -1087,7 +1132,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                           ),
                                         ),
                                         const SizedBox(height: 6),
-                                        const Text(
+                                        Text(
                                           'Додайте нову накладну або змініть період / фільтри пошуку',
                                           style: TextStyle(
                                             color: OsnovaTheme.sageMuted,
@@ -1098,34 +1143,43 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                     ),
                                   ),
                                 )
-                              : ListView.separated(
-                                  itemCount: filteredPurchases.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 10),
-                                  itemBuilder: (context, index) {
-                                    final purchase = filteredPurchases[index];
-                                    final pId = purchase['id'] as int;
-                                    final isExpanded =
-                                        _expandedIds.contains(pId);
+                              : _OsnovaGoldScrollbar(
+                                  controller: _invoicesScrollCtrl,
+                                  child: ListView.separated(
+                                    controller: _invoicesScrollCtrl,
+                                    padding: const EdgeInsets.only(
+                                      right: 12,
+                                      bottom: 6,
+                                    ),
+                                    itemCount: filteredPurchases.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      final purchase = filteredPurchases[index];
+                                      final pId = purchase['id'] as int;
+                                      final isExpanded =
+                                          _expandedIds.contains(pId);
 
-                                    return _CollapsiblePurchaseCard(
-                                      purchase: purchase,
-                                      dateFormatted: _formatDateUa(
-                                        purchase['purchase_date'] as String,
-                                      ),
-                                      isExpanded: isExpanded,
-                                      searchQuery: query,
-                                      categoryFilter: _selectedCategoryFilter,
-                                      onToggleExpand: () => _toggleExpand(pId),
-                                      onEdit: () => _openPurchaseEditor(
-                                        existingPurchase: purchase,
-                                      ),
-                                      onDelete: () => _confirmDeletePurchase(
-                                        pId,
-                                        purchase['supplier'] as String,
-                                      ),
-                                    );
-                                  },
+                                      return _CollapsiblePurchaseCard(
+                                        purchase: purchase,
+                                        dateFormatted: _formatDateUa(
+                                          purchase['purchase_date'] as String,
+                                        ),
+                                        isExpanded: isExpanded,
+                                        searchQuery: query,
+                                        categoryFilter: _selectedCategoryFilter,
+                                        onToggleExpand: () =>
+                                            _toggleExpand(pId),
+                                        onEdit: () => _openPurchaseEditor(
+                                          existingPurchase: purchase,
+                                        ),
+                                        onDelete: () => _confirmDeletePurchase(
+                                          pId,
+                                          purchase['supplier'] as String,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                         ),
                       ],
@@ -1231,7 +1285,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                     child: AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0.0,
                       duration: const Duration(milliseconds: 200),
-                      child: const Icon(
+                      child: Icon(
                         Icons.keyboard_arrow_down_rounded,
                         color: OsnovaTheme.goldBright,
                         size: 22,
@@ -1253,7 +1307,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                     ),
                     child: Text(
                       dateFormatted,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.goldBright,
                         fontWeight: FontWeight.w800,
                         fontSize: 12.5,
@@ -1272,7 +1326,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                                 supplier,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: OsnovaTheme.creamText,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15.5,
@@ -1291,7 +1345,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                               ),
                               child: Text(
                                 _pluralizePositions(items.length),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: OsnovaTheme.sageMuted,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
@@ -1316,7 +1370,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                                 ),
                                 child: Text(
                                   'Збігів: $matchedCount',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.liveGreen,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
@@ -1330,7 +1384,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.tag_rounded,
                                 size: 13,
                                 color: OsnovaTheme.sageMuted,
@@ -1341,7 +1395,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                                   note,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.sageMuted,
                                     fontSize: 12,
                                   ),
@@ -1368,7 +1422,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                     ),
                     child: Text(
                       MoneyFormatter.format(total),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.goldBright,
                         fontWeight: FontWeight.w900,
                         fontSize: 16.5,
@@ -1380,7 +1434,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                     tooltip: 'Редагувати накладну',
                     visualDensity: VisualDensity.compact,
                     onPressed: onEdit,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.edit_outlined,
                       color: OsnovaTheme.goldBright,
                       size: 20,
@@ -1459,7 +1513,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                             ),
                             child: Text(
                               '${idx + 1}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: OsnovaTheme.goldBright,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -1473,7 +1527,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                               children: [
                                 Text(
                                   item['name'] as String,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.creamText,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 13.5,
@@ -1482,7 +1536,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                                 const SizedBox(height: 1),
                                 Text(
                                   cat,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: OsnovaTheme.sageMuted,
                                     fontSize: 11,
                                   ),
@@ -1492,7 +1546,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                           ),
                           Text(
                             '$qtyText $unit × ${MoneyFormatter.format(unitPrice)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.sageMuted,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -1501,7 +1555,7 @@ class _CollapsiblePurchaseCard extends StatelessWidget {
                           const SizedBox(width: 14),
                           Text(
                             MoneyFormatter.format(itemTotal),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.goldBright,
                               fontWeight: FontWeight.w900,
                               fontSize: 13.5,
@@ -1558,7 +1612,7 @@ class _StatPill extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: OsnovaTheme.sageMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -1572,7 +1626,7 @@ class _StatPill extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: OsnovaTheme.creamText,
                 fontWeight: FontWeight.w900,
                 fontSize: 14,
@@ -1703,6 +1757,9 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
   final _itemNameCtrl = TextEditingController();
   final _qtyCtrl = TextEditingController(text: '1');
   final _priceCtrl = TextEditingController();
+  final ScrollController _formScrollCtrl = ScrollController();
+  final ScrollController _itemsScrollCtrl = ScrollController();
+
   String _selectedCategory = _categories.first;
   String _selectedUnit = _units.first;
   bool _showAllPresets = false;
@@ -1754,6 +1811,8 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
     _itemNameCtrl.dispose();
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
+    _formScrollCtrl.dispose();
+    _itemsScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -1951,7 +2010,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
+      labelStyle: TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
       hintStyle: TextStyle(
         color: OsnovaTheme.sageMuted.withValues(alpha: 0.55),
         fontSize: 12.5,
@@ -1974,7 +2033,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: OsnovaTheme.goldBright, width: 1.4),
+        borderSide: BorderSide(color: OsnovaTheme.goldBright, width: 1.4),
       ),
     );
   }
@@ -2033,14 +2092,14 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                           _isEditingInvoice
                               ? 'РЕДАГУВАННЯ НАКЛАДНОЇ'
                               : 'НОВА НАКЛАДНА ЗАКУПКИ',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: OsnovaTheme.goldBright,
                             fontWeight: FontWeight.w900,
                             fontSize: 17,
                             letterSpacing: 1.0,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Оберіть постачальника, додайте позиції з накладної та збережіть у журнал',
                           style: TextStyle(
                             color: OsnovaTheme.sageMuted,
@@ -2067,7 +2126,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_month_rounded,
                             color: OsnovaTheme.goldBright,
                             size: 18,
@@ -2075,14 +2134,14 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                           const SizedBox(width: 8),
                           Text(
                             'Дата: $dateText',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.creamText,
                               fontWeight: FontWeight.w800,
                               fontSize: 13.5,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(
+                          Icon(
                             Icons.edit_outlined,
                             color: OsnovaTheme.sageMuted,
                             size: 15,
@@ -2094,7 +2153,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: OsnovaTheme.sageMuted,
                     ),
@@ -2109,513 +2168,540 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ЛІВА КОЛОНКА: Постачальник + Конструктор позиції
+                    // ЛІВА КОЛОНКА: Постачальник + Конструктор позиції + золотий скрол-індикатор
                     Expanded(
                       flex: 55,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Блок 1: Вибір постачальника
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF11261F),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color:
-                                      OsnovaTheme.gold.withValues(alpha: 0.25),
+                      child: _OsnovaGoldScrollbar(
+                        controller: _formScrollCtrl,
+                        child: SingleChildScrollView(
+                          controller: _formScrollCtrl,
+                          padding: const EdgeInsets.only(right: 12, bottom: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Блок 1: Вибір постачальника
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF11261F),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color:
+                                        OsnovaTheme.gold.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '1. ПОСТАЧАЛЬНИК ТА НОМЕР НАКЛАДНОЇ',
+                                      style: TextStyle(
+                                        color: OsnovaTheme.goldBright,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: _quickSuppliers.map((sup) {
+                                        final isSelected =
+                                            currentSupplierLower ==
+                                                sup.toLowerCase();
+                                        return ChoiceChip(
+                                          label: Text(
+                                            sup,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? OsnovaTheme.bgDark
+                                                  : OsnovaTheme.creamText,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w900
+                                                  : FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          selected: isSelected,
+                                          selectedColor: OsnovaTheme.gold,
+                                          backgroundColor:
+                                              const Color(0xFF0A1914),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? OsnovaTheme.goldBright
+                                                : OsnovaTheme.gold
+                                                    .withValues(alpha: 0.35),
+                                          ),
+                                          onSelected: (_) =>
+                                              _selectSupplier(sup),
+                                        );
+                                      }).toList(),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 6,
+                                          child: TextField(
+                                            controller: _supplierCtrl,
+                                            onChanged: (_) => setState(() {}),
+                                            style: TextStyle(
+                                              color: OsnovaTheme.creamText,
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            decoration: _fieldDecoration(
+                                              label: 'Постачальник',
+                                              hint: 'TeaKava, Оболонь або інший',
+                                              icon: Icons.storefront_outlined,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          flex: 4,
+                                          child: TextField(
+                                            controller: _noteCtrl,
+                                            style: TextStyle(
+                                              color: OsnovaTheme.creamText,
+                                              fontSize: 13.5,
+                                            ),
+                                            decoration: _fieldDecoration(
+                                              label: '№ накладної / нотатка',
+                                              hint: 'Необов’язково',
+                                              icon: Icons.tag_rounded,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '1. ПОСТАЧАЛЬНИК ТА НОМЕР НАКЛАДНОЇ',
-                                    style: TextStyle(
-                                      color: OsnovaTheme.goldBright,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.8,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: _quickSuppliers.map((sup) {
-                                      final isSelected =
-                                          currentSupplierLower ==
-                                              sup.toLowerCase();
-                                      return ChoiceChip(
-                                        label: Text(
-                                          sup,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? OsnovaTheme.bgDark
-                                                : OsnovaTheme.creamText,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w900
-                                                : FontWeight.w600,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        selected: isSelected,
-                                        selectedColor: OsnovaTheme.gold,
-                                        backgroundColor:
-                                            const Color(0xFF0A1914),
-                                        side: BorderSide(
-                                          color: isSelected
-                                              ? OsnovaTheme.goldBright
-                                              : OsnovaTheme.gold
-                                                  .withValues(alpha: 0.35),
-                                        ),
-                                        onSelected: (_) => _selectSupplier(sup),
-                                      );
-                                    }).toList(),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 6,
-                                        child: TextField(
-                                          controller: _supplierCtrl,
-                                          onChanged: (_) => setState(() {}),
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.creamText,
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                          decoration: _fieldDecoration(
-                                            label: 'Постачальник',
-                                            hint: 'TeaKava, Оболонь або інший',
-                                            icon: Icons.storefront_outlined,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        flex: 4,
-                                        child: TextField(
-                                          controller: _noteCtrl,
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.creamText,
-                                            fontSize: 13.5,
-                                          ),
-                                          decoration: _fieldDecoration(
-                                            label: '№ накладної / нотатка',
-                                            hint: 'Необов’язково',
-                                            icon: Icons.tag_rounded,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
 
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            // Блок 2: Конструктор товару з накладної
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF11261F),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: _editingItemIndex != null
-                                      ? OsnovaTheme.liveGreen
-                                          .withValues(alpha: 0.7)
-                                      : OsnovaTheme.gold
-                                          .withValues(alpha: 0.38),
+                              // Блок 2: Конструктор товару з накладної
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF11261F),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _editingItemIndex != null
+                                        ? OsnovaTheme.liveGreen
+                                            .withValues(alpha: 0.7)
+                                        : OsnovaTheme.gold
+                                            .withValues(alpha: 0.38),
+                                  ),
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _editingItemIndex != null
-                                            ? '2. РЕДАГУВАННЯ ПОЗИЦІЇ #${_editingItemIndex! + 1}'
-                                            : '2. ТОВАР ІЗ НАКЛАДНОЇ',
-                                        style: TextStyle(
-                                          color: _editingItemIndex != null
-                                              ? OsnovaTheme.liveGreen
-                                              : OsnovaTheme.goldBright,
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: [
-                                          if (_editingItemIndex != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 10),
-                                              child: GestureDetector(
-                                                onTap: _cancelEditingItem,
-                                                child: const Text(
-                                                  'Скасувати',
-                                                  style: TextStyle(
-                                                    color: Colors.redAccent,
-                                                    fontSize: 11.5,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          GestureDetector(
-                                            onTap: () => setState(() =>
-                                                _showAllPresets =
-                                                    !_showAllPresets),
-                                            child: Text(
-                                              _showAllPresets
-                                                  ? 'Тільки обраного постач.'
-                                                  : 'Показати всі шаблони',
-                                              style: const TextStyle(
-                                                color: OsnovaTheme.goldBright,
-                                                fontSize: 11.5,
-                                                fontWeight: FontWeight.w700,
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-
-                                  // Швидкі пресети товарів
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: presetsToShow.map((preset) {
-                                      return ActionChip(
-                                        backgroundColor:
-                                            const Color(0xFF0A1914),
-                                        side: BorderSide(
-                                          color: OsnovaTheme.gold
-                                              .withValues(alpha: 0.35),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        label: Text(
-                                          '+ ${preset['name']}',
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.goldBright,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        onPressed: () => _applyPreset(preset),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                  const SizedBox(height: 10),
-
-                                  TextField(
-                                    controller: _itemNameCtrl,
-                                    style: const TextStyle(
-                                      color: OsnovaTheme.creamText,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    decoration: _fieldDecoration(
-                                      label: 'Назва товару',
-                                      hint:
-                                          'Оберіть шаблон вище або впишіть вручну',
-                                      icon: Icons.inventory_2_outlined,
-                                      suffixIcon: _itemNameCtrl.text.isNotEmpty
-                                          ? IconButton(
-                                              icon: const Icon(
-                                                Icons.clear_rounded,
-                                                size: 16,
-                                                color: OsnovaTheme.sageMuted,
-                                              ),
-                                              onPressed: () => setState(
-                                                () => _itemNameCtrl.clear(),
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    onChanged: (_) => setState(() {}),
-                                  ),
-
-                                  const SizedBox(height: 10),
-
-                                  // Вибір категорії чіпами
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: _categories.map((cat) {
-                                      final isSelected =
-                                          _selectedCategory == cat;
-                                      return ChoiceChip(
-                                        label: Text(
-                                          cat,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _editingItemIndex != null
+                                              ? '2. РЕДАГУВАННЯ ПОЗИЦІЇ #${_editingItemIndex! + 1}'
+                                              : '2. ТОВАР ІЗ НАКЛАДНОЇ',
                                           style: TextStyle(
-                                            color: isSelected
-                                                ? OsnovaTheme.bgDark
-                                                : OsnovaTheme.creamText,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w900
-                                                : FontWeight.w600,
+                                            color: _editingItemIndex != null
+                                                ? OsnovaTheme.liveGreen
+                                                : OsnovaTheme.goldBright,
                                             fontSize: 11.5,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.8,
                                           ),
                                         ),
-                                        selected: isSelected,
-                                        selectedColor: OsnovaTheme.gold,
-                                        backgroundColor:
-                                            const Color(0xFF0A1914),
-                                        side: BorderSide(
-                                          color: isSelected
-                                              ? OsnovaTheme.goldBright
-                                              : OsnovaTheme.gold
-                                                  .withValues(alpha: 0.25),
-                                        ),
-                                        onSelected: (_) => setState(
-                                          () => _selectedCategory = cat,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  // Кількість зі степпером, одиниці виміру, ціна за одиницю
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 4,
-                                        child: TextField(
-                                          controller: _qtyCtrl,
-                                          keyboardType: const TextInputType
-                                              .numberWithOptions(decimal: true),
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter.allow(
-                                              RegExp(r'[0-9.,]'),
-                                            ),
-                                          ],
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.creamText,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                          decoration: _fieldDecoration(
-                                            label: 'Кількість',
-                                            suffixIcon: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                InkWell(
-                                                  onTap: () => _adjustQty(-1),
-                                                  child: const Padding(
-                                                    padding:
-                                                        EdgeInsets.all(4.0),
-                                                    child: Icon(
-                                                      Icons.remove_rounded,
-                                                      size: 16,
-                                                      color: OsnovaTheme
-                                                          .sageMuted,
-                                                    ),
-                                                  ),
-                                                ),
-                                                InkWell(
-                                                  onTap: () => _adjustQty(1),
-                                                  child: const Padding(
-                                                    padding:
-                                                        EdgeInsets.all(4.0),
-                                                    child: Icon(
-                                                      Icons.add_rounded,
-                                                      size: 16,
-                                                      color: OsnovaTheme
-                                                          .goldBright,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      // Перемикач одиниць виміру
-                                      Container(
-                                        padding: const EdgeInsets.all(3),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF0A1914),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: OsnovaTheme.gold
-                                                .withValues(alpha: 0.28),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: _units.map((u) {
-                                            final active = _selectedUnit == u;
-                                            return GestureDetector(
-                                              onTap: () => setState(
-                                                () => _selectedUnit = u,
-                                              ),
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 8,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: active
-                                                      ? OsnovaTheme.gold
-                                                      : Colors.transparent,
-                                                  borderRadius:
-                                                      BorderRadius.circular(9),
-                                                ),
-                                                child: Text(
-                                                  u,
-                                                  style: TextStyle(
-                                                    color: active
-                                                        ? OsnovaTheme.bgDark
-                                                        : OsnovaTheme.creamText,
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 11.5,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        flex: 4,
-                                        child: TextField(
-                                          controller: _priceCtrl,
-                                          keyboardType: const TextInputType
-                                              .numberWithOptions(decimal: true),
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter.allow(
-                                              RegExp(r'[0-9.,]'),
-                                            ),
-                                          ],
-                                          style: const TextStyle(
-                                            color: OsnovaTheme.creamText,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                          decoration: _fieldDecoration(
-                                            label:
-                                                'Ціна за 1 $_selectedUnit (грн)',
-                                            hint: '0.00',
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  // Кнопка додавання з живим підрахунком позиції
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF0A1914),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: OsnovaTheme.gold
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                        Row(
                                           children: [
-                                            const Text(
-                                              'Сума позиції',
-                                              style: TextStyle(
-                                                color: OsnovaTheme.sageMuted,
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w700,
+                                            if (_editingItemIndex != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 10,
+                                                ),
+                                                child: GestureDetector(
+                                                  onTap: _cancelEditingItem,
+                                                  child: const Text(
+                                                    'Скасувати',
+                                                    style: TextStyle(
+                                                      color: Colors.redAccent,
+                                                      fontSize: 11.5,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                            Text(
-                                              MoneyFormatter.format(
-                                                _draftLineTotalCents,
+                                            GestureDetector(
+                                              onTap: () => setState(
+                                                () => _showAllPresets =
+                                                    !_showAllPresets,
                                               ),
-                                              style: const TextStyle(
-                                                color: OsnovaTheme.goldBright,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 14.5,
+                                              child: Text(
+                                                _showAllPresets
+                                                    ? 'Тільки обраного постач.'
+                                                    : 'Показати всі шаблони',
+                                                style: TextStyle(
+                                                  color: OsnovaTheme.goldBright,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: FilledButton.icon(
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                _editingItemIndex != null
-                                                    ? OsnovaTheme.liveGreen
-                                                    : OsnovaTheme.gold,
-                                            foregroundColor: OsnovaTheme.bgDark,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 15,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    // Швидкі пресети товарів
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: presetsToShow.map((preset) {
+                                        return ActionChip(
+                                          backgroundColor:
+                                              const Color(0xFF0A1914),
+                                          side: BorderSide(
+                                            color: OsnovaTheme.gold
+                                                .withValues(alpha: 0.35),
                                           ),
-                                          onPressed: _commitItemToInvoice,
-                                          icon: Icon(
-                                            _editingItemIndex != null
-                                                ? Icons.check_rounded
-                                                : Icons
-                                                    .add_circle_outline_rounded,
-                                            size: 20,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
                                           ),
                                           label: Text(
-                                            _editingItemIndex != null
-                                                ? 'Оновити позицію'
-                                                : 'Додати в накладну',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 14,
+                                            '+ ${preset['name']}',
+                                            style: TextStyle(
+                                              color: OsnovaTheme.goldBright,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          onPressed: () => _applyPreset(preset),
+                                        );
+                                      }).toList(),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    TextField(
+                                      controller: _itemNameCtrl,
+                                      style: TextStyle(
+                                        color: OsnovaTheme.creamText,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      decoration: _fieldDecoration(
+                                        label: 'Назва товару',
+                                        hint:
+                                            'Оберіть шаблон вище або впишіть вручну',
+                                        icon: Icons.inventory_2_outlined,
+                                        suffixIcon:
+                                            _itemNameCtrl.text.isNotEmpty
+                                                ? IconButton(
+                                                    icon: Icon(
+                                                      Icons.clear_rounded,
+                                                      size: 16,
+                                                      color:
+                                                          OsnovaTheme.sageMuted,
+                                                    ),
+                                                    onPressed: () => setState(
+                                                      () =>
+                                                          _itemNameCtrl.clear(),
+                                                    ),
+                                                  )
+                                                : null,
+                                      ),
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    // Вибір категорії чіпами
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: _categories.map((cat) {
+                                        final isSelected =
+                                            _selectedCategory == cat;
+                                        return ChoiceChip(
+                                          label: Text(
+                                            cat,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? OsnovaTheme.bgDark
+                                                  : OsnovaTheme.creamText,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w900
+                                                  : FontWeight.w600,
+                                              fontSize: 11.5,
+                                            ),
+                                          ),
+                                          selected: isSelected,
+                                          selectedColor: OsnovaTheme.gold,
+                                          backgroundColor:
+                                              const Color(0xFF0A1914),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? OsnovaTheme.goldBright
+                                                : OsnovaTheme.gold
+                                                    .withValues(alpha: 0.25),
+                                          ),
+                                          onSelected: (_) => setState(
+                                            () => _selectedCategory = cat,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    // Кількість зі степпером, одиниці виміру, ціна за одиницю
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 4,
+                                          child: TextField(
+                                            controller: _qtyCtrl,
+                                            keyboardType: const TextInputType
+                                                .numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.allow(
+                                                RegExp(r'[0-9.,]'),
+                                              ),
+                                            ],
+                                            style: TextStyle(
+                                              color: OsnovaTheme.creamText,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                            decoration: _fieldDecoration(
+                                              label: 'Кількість',
+                                              suffixIcon: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  InkWell(
+                                                    onTap: () =>
+                                                        _adjustQty(-1),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                        4.0,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.remove_rounded,
+                                                        size: 16,
+                                                        color: OsnovaTheme
+                                                            .sageMuted,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  InkWell(
+                                                    onTap: () => _adjustQty(1),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                        4.0,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.add_rounded,
+                                                        size: 16,
+                                                        color: OsnovaTheme
+                                                            .goldBright,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                        const SizedBox(width: 8),
+                                        // Перемикач одиниць виміру
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0A1914),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: OsnovaTheme.gold
+                                                  .withValues(alpha: 0.28),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: _units.map((u) {
+                                              final active =
+                                                  _selectedUnit == u;
+                                              return GestureDetector(
+                                                onTap: () => setState(
+                                                  () => _selectedUnit = u,
+                                                ),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: active
+                                                        ? OsnovaTheme.gold
+                                                        : Colors.transparent,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      9,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    u,
+                                                    style: TextStyle(
+                                                      color: active
+                                                          ? OsnovaTheme.bgDark
+                                                          : OsnovaTheme
+                                                              .creamText,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      fontSize: 11.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          flex: 4,
+                                          child: TextField(
+                                            controller: _priceCtrl,
+                                            keyboardType: const TextInputType
+                                                .numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.allow(
+                                                RegExp(r'[0-9.,]'),
+                                              ),
+                                            ],
+                                            style: TextStyle(
+                                              color: OsnovaTheme.creamText,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                            decoration: _fieldDecoration(
+                                              label:
+                                                  'Ціна за 1 $_selectedUnit (грн)',
+                                              hint: '0.00',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    // Кнопка додавання з живим підрахунком позиції
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0A1914),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: OsnovaTheme.gold
+                                                  .withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Сума позиції',
+                                                style: TextStyle(
+                                                  color: OsnovaTheme.sageMuted,
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              Text(
+                                                MoneyFormatter.format(
+                                                  _draftLineTotalCents,
+                                                ),
+                                                style: TextStyle(
+                                                  color: OsnovaTheme.goldBright,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 14.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: FilledButton.icon(
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  _editingItemIndex != null
+                                                      ? OsnovaTheme.liveGreen
+                                                      : OsnovaTheme.gold,
+                                              foregroundColor:
+                                                  OsnovaTheme.bgDark,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                vertical: 15,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: _commitItemToInvoice,
+                                            icon: Icon(
+                                              _editingItemIndex != null
+                                                  ? Icons.check_rounded
+                                                  : Icons
+                                                      .add_circle_outline_rounded,
+                                              size: 20,
+                                            ),
+                                            label: Text(
+                                              _editingItemIndex != null
+                                                  ? 'Оновити позицію'
+                                                  : 'Додати в накладну',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
 
-                    // ПРАВА КОЛОНКА: Живий чек складу накладної
+                    // ПРАВА КОЛОНКА: Живий чек складу накладної зі скрол-індикатором
                     Expanded(
                       flex: 45,
                       child: Container(
@@ -2635,13 +2721,13 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.receipt_outlined,
                                       size: 16,
                                       color: OsnovaTheme.goldBright,
                                     ),
                                     const SizedBox(width: 6),
-                                    const Text(
+                                    Text(
                                       'СКЛАД НАКЛАДНОЇ',
                                       style: TextStyle(
                                         color: OsnovaTheme.goldBright,
@@ -2663,7 +2749,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                                       ),
                                       child: Text(
                                         '${_items.length}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.goldBright,
                                           fontWeight: FontWeight.w900,
                                           fontSize: 12,
@@ -2696,7 +2782,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                             ),
                             if (_items.isNotEmpty) ...[
                               const SizedBox(height: 2),
-                              const Text(
+                              Text(
                                 'Натисніть на позицію, щоб відредагувати її',
                                 style: TextStyle(
                                   color: OsnovaTheme.sageMuted,
@@ -2718,7 +2804,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                                                 .withValues(alpha: 0.35),
                                           ),
                                           const SizedBox(height: 8),
-                                          const Text(
+                                          Text(
                                             'Список порожній\nДодайте товари зліва',
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
@@ -2729,110 +2815,127 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                                         ],
                                       ),
                                     )
-                                  : ListView.separated(
-                                      itemCount: _items.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 8),
-                                      itemBuilder: (context, index) {
-                                        final item = _items[index];
-                                        final qty =
-                                            (item['qty'] as num).toDouble();
-                                        final qtyStr = qty % 1 == 0
-                                            ? qty.toInt().toString()
-                                            : qty.toStringAsFixed(2);
-                                        final isEditingThis =
-                                            _editingItemIndex == index;
+                                  : _OsnovaGoldScrollbar(
+                                      controller: _itemsScrollCtrl,
+                                      child: ListView.separated(
+                                        controller: _itemsScrollCtrl,
+                                        padding: const EdgeInsets.only(
+                                          right: 10,
+                                          bottom: 4,
+                                        ),
+                                        itemCount: _items.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 8),
+                                        itemBuilder: (context, index) {
+                                          final item = _items[index];
+                                          final qty =
+                                              (item['qty'] as num).toDouble();
+                                          final qtyStr = qty % 1 == 0
+                                              ? qty.toInt().toString()
+                                              : qty.toStringAsFixed(2);
+                                          final isEditingThis =
+                                              _editingItemIndex == index;
 
-                                        return InkWell(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          onTap: () => _startEditingItem(index),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 9,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isEditingThis
-                                                  ? OsnovaTheme.liveGreen
-                                                      .withValues(alpha: 0.16)
-                                                  : const Color(0xFF11261F),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
+                                          return InkWell(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            onTap: () =>
+                                                _startEditingItem(index),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 9,
+                                              ),
+                                              decoration: BoxDecoration(
                                                 color: isEditingThis
                                                     ? OsnovaTheme.liveGreen
-                                                    : OsnovaTheme.gold
-                                                        .withValues(alpha: 0.24),
+                                                        .withValues(alpha: 0.16)
+                                                    : const Color(0xFF11261F),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: isEditingThis
+                                                      ? OsnovaTheme.liveGreen
+                                                      : OsnovaTheme.gold
+                                                          .withValues(
+                                                          alpha: 0.24,
+                                                        ),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          item['name']
+                                                              as String,
+                                                          style: TextStyle(
+                                                            color: OsnovaTheme
+                                                                .creamText,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            fontSize: 13.5,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 2,
+                                                        ),
+                                                        Text(
+                                                          '${item['category']} • $qtyStr ${item['unit']} × ${MoneyFormatter.format(item['unit_price'] as int)}',
+                                                          style: TextStyle(
+                                                            color: OsnovaTheme
+                                                                .sageMuted,
+                                                            fontSize: 11.5,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    MoneyFormatter.format(
+                                                      item['total_price']
+                                                          as int,
+                                                    ),
+                                                    style: TextStyle(
+                                                      color: OsnovaTheme
+                                                          .goldBright,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  IconButton(
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    icon: const Icon(
+                                                      Icons.close_rounded,
+                                                      color: Colors.redAccent,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        if (_editingItemIndex ==
+                                                            index) {
+                                                          _editingItemIndex =
+                                                              null;
+                                                        }
+                                                        _items.removeAt(index);
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        item['name'] as String,
-                                                        style: const TextStyle(
-                                                          color: OsnovaTheme
-                                                              .creamText,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          fontSize: 13.5,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        '${item['category']} • $qtyStr ${item['unit']} × ${MoneyFormatter.format(item['unit_price'] as int)}',
-                                                        style: const TextStyle(
-                                                          color: OsnovaTheme
-                                                              .sageMuted,
-                                                          fontSize: 11.5,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  MoneyFormatter.format(
-                                                    item['total_price'] as int,
-                                                  ),
-                                                  style: const TextStyle(
-                                                    color:
-                                                        OsnovaTheme.goldBright,
-                                                    fontWeight: FontWeight.w900,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                IconButton(
-                                                  visualDensity:
-                                                      VisualDensity.compact,
-                                                  icon: const Icon(
-                                                    Icons.close_rounded,
-                                                    color: Colors.redAccent,
-                                                    size: 18,
-                                                  ),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      if (_editingItemIndex ==
-                                                          index) {
-                                                        _editingItemIndex =
-                                                            null;
-                                                      }
-                                                      _items.removeAt(index);
-                                                    });
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                          );
+                                        },
+                                      ),
                                     ),
                             ),
                           ],
@@ -2863,7 +2966,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'РАЗОМ ПО НАКЛАДНІЙ:',
                           style: TextStyle(
                             color: OsnovaTheme.sageMuted,
@@ -2874,7 +2977,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                         const SizedBox(width: 10),
                         Text(
                           MoneyFormatter.format(totalCents),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: OsnovaTheme.goldBright,
                             fontSize: 23,
                             fontWeight: FontWeight.w900,
@@ -2887,7 +2990,7 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
                         TextButton(
                           onPressed:
                               _isSaving ? null : () => Navigator.pop(context),
-                          child: const Text(
+                          child: Text(
                             'Скасувати',
                             style: TextStyle(color: OsnovaTheme.sageMuted),
                           ),
@@ -2926,6 +3029,34 @@ class _PurchaseEditorDialogState extends State<_PurchaseEditorDialog> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Фірмовий золотий скрол-індикатор OSNOVA (автоматично показується, коли вміст перевищує висоту блоку)
+class _OsnovaGoldScrollbar extends StatelessWidget {
+  final ScrollController controller;
+  final Widget child;
+
+  const _OsnovaGoldScrollbar({
+    required this.controller,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RawScrollbar(
+      controller: controller,
+      thumbVisibility: true,
+      trackVisibility: true,
+      interactive: true,
+      thickness: 5.5,
+      radius: const Radius.circular(8),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+      thumbColor: OsnovaTheme.goldBright.withValues(alpha: 0.82),
+      trackColor: const Color(0xFF071510).withValues(alpha: 0.85),
+      trackBorderColor: OsnovaTheme.gold.withValues(alpha: 0.24),
+      child: child,
     );
   }
 }

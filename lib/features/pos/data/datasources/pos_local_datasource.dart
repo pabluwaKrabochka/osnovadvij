@@ -619,6 +619,12 @@ await db.execute('''
     required String username,
     required List<String> tags,
   }) async {
+    final cleanTags =
+        tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toSet().toList();
+    if (cleanTags.isEmpty) {
+      throw ArgumentError('Оберіть хоча б один напрямок для учасника');
+    }
+
     final db = await database;
     var cleanUser = username.trim();
     if (cleanUser.isNotEmpty && !cleanUser.startsWith('@')) {
@@ -627,8 +633,27 @@ await db.execute('''
     await db.insert('tg_subscribers', {
       'name': name.trim(),
       'username': cleanUser,
-      'tags': tags.join(','),
+      'tags': cleanTags.join(','),
     });
+  }
+
+  Future<void> updateTgSubscriberTags({
+    required int id,
+    required List<String> tags,
+  }) async {
+    final cleanTags =
+        tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toSet().toList();
+    if (cleanTags.isEmpty) {
+      throw ArgumentError('Потрібен хоча б один напрямок');
+    }
+
+    final db = await database;
+    await db.update(
+      'tg_subscribers',
+      {'tags': cleanTags.join(',')},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<void> deleteTgSubscriber(int id) async {

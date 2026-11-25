@@ -20,12 +20,12 @@ class PosDialogs {
       labelText: label,
       hintText: hint,
       suffixText: suffixText,
-      labelStyle: const TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
+      labelStyle: TextStyle(color: OsnovaTheme.sageMuted, fontSize: 12.5),
       hintStyle: TextStyle(
         color: OsnovaTheme.sageMuted.withValues(alpha: 0.55),
         fontSize: 12.5,
       ),
-      suffixStyle: const TextStyle(
+      suffixStyle: TextStyle(
         color: OsnovaTheme.goldBright,
         fontWeight: FontWeight.w800,
       ),
@@ -47,7 +47,7 @@ class PosDialogs {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
-        borderSide: const BorderSide(color: OsnovaTheme.goldBright, width: 1.5),
+        borderSide: BorderSide(color: OsnovaTheme.goldBright, width: 1.5),
       ),
     );
   }
@@ -102,7 +102,7 @@ class PosDialogs {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: OsnovaTheme.sageMuted,
                   fontSize: 12,
                 ),
@@ -116,7 +116,7 @@ class PosDialogs {
         ],
         IconButton(
           onPressed: onClose,
-          icon: const Icon(Icons.close_rounded, color: OsnovaTheme.sageMuted),
+          icon: Icon(Icons.close_rounded, color: OsnovaTheme.sageMuted),
         ),
       ],
     );
@@ -238,7 +238,7 @@ class PosDialogs {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Поточний баланс у системі:',
                         style: TextStyle(
                           color: OsnovaTheme.sageMuted,
@@ -248,7 +248,7 @@ class PosDialogs {
                       ),
                       Text(
                         MoneyFormatter.format(controller.currentCashInDrawer),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.goldBright,
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
@@ -266,7 +266,7 @@ class PosDialogs {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: OsnovaTheme.goldBright,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -289,7 +289,7 @@ class PosDialogs {
                       ),
                       label: Text(
                         '+$delta грн',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: OsnovaTheme.goldBright,
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
@@ -305,7 +305,7 @@ class PosDialogs {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text(
+                      child: Text(
                         'Скасувати',
                         style: TextStyle(color: OsnovaTheme.sageMuted),
                       ),
@@ -519,7 +519,7 @@ class PosDialogs {
                                               ),
                                               child: Text(
                                                 '№${order.receiptNum}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color: OsnovaTheme.goldBright,
                                                   fontWeight: FontWeight.w900,
                                                   fontSize: 12.5,
@@ -536,7 +536,7 @@ class PosDialogs {
                                                     children: [
                                                       Text(
                                                         time,
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           color: OsnovaTheme
                                                               .sageMuted,
                                                           fontSize: 11.5,
@@ -579,7 +579,7 @@ class PosDialogs {
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       color:
                                                           OsnovaTheme.creamText,
                                                       fontSize: 12.5,
@@ -595,7 +595,7 @@ class PosDialogs {
                                               MoneyFormatter.format(
                                                 order.totalAmount,
                                               ),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: OsnovaTheme.goldBright,
                                                 fontWeight: FontWeight.w900,
                                                 fontSize: 15,
@@ -680,7 +680,7 @@ class PosDialogs {
                                                 children: [
                                                   Text(
                                                     exp.title,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       color:
                                                           OsnovaTheme.creamText,
                                                       fontWeight:
@@ -693,7 +693,7 @@ class PosDialogs {
                                                     children: [
                                                       Text(
                                                         time,
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           color: OsnovaTheme
                                                               .sageMuted,
                                                           fontSize: 11.5,
@@ -838,7 +838,7 @@ class PosDialogs {
                                                     isIn
                                                         ? 'Службове внесення'
                                                         : 'Службове винесення',
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       color:
                                                           OsnovaTheme.creamText,
                                                       fontWeight:
@@ -849,7 +849,7 @@ class PosDialogs {
                                                   const SizedBox(height: 2),
                                                   Text(
                                                     '[$hh:$mm] ${op.reason}',
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       color:
                                                           OsnovaTheme.sageMuted,
                                                       fontSize: 12,
@@ -941,7 +941,7 @@ class PosDialogs {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: OsnovaTheme.sageMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -987,7 +987,7 @@ class PosDialogs {
             const SizedBox(height: 10),
             Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 color: OsnovaTheme.sageMuted,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
@@ -1061,7 +1061,7 @@ class PosDialogs {
                                 controller: nameCtrl,
                                 autofocus: true,
                                 onChanged: (_) => setDialogState(() {}),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: OsnovaTheme.creamText,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1080,13 +1080,14 @@ class PosDialogs {
                                       onChanged: (_) => setDialogState(() {}),
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                              decimal: true),
+                                        decimal: true,
+                                      ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'[0-9.,]'),
                                         ),
                                       ],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: OsnovaTheme.goldBright,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 16,
@@ -1104,13 +1105,14 @@ class PosDialogs {
                                       onChanged: (_) => setDialogState(() {}),
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                              decimal: true),
+                                        decimal: true,
+                                      ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'[0-9.,]'),
                                         ),
                                       ],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: OsnovaTheme.creamText,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -1137,7 +1139,7 @@ class PosDialogs {
                                     ),
                                     label: Text(
                                       '$p грн',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: OsnovaTheme.goldBright,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
@@ -1152,7 +1154,7 @@ class PosDialogs {
                                 }).toList(),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
+                              Text(
                                 'КАТЕГОРІЯ ВІТРИНИ:',
                                 style: TextStyle(
                                   color: OsnovaTheme.sageMuted,
@@ -1215,7 +1217,7 @@ class PosDialogs {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const Text(
+                                Text(
                                   'ВИГЛЯД НА КАСІ',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
@@ -1262,7 +1264,7 @@ class PosDialogs {
                                           category,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: OsnovaTheme.sageMuted,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
@@ -1287,7 +1289,7 @@ class PosDialogs {
                                       const SizedBox(height: 14),
                                       Text(
                                         MoneyFormatter.format(previewPrice),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.goldBright,
                                           fontWeight: FontWeight.w900,
                                           fontSize: 18,
@@ -1315,7 +1317,7 @@ class PosDialogs {
                                     child: Text(
                                       'Маржа: +${MoneyFormatter.format(marginKopecks)}',
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: OsnovaTheme.liveGreen,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
@@ -1335,7 +1337,7 @@ class PosDialogs {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
+                          child: Text(
                             'Скасувати',
                             style: TextStyle(color: OsnovaTheme.sageMuted),
                           ),
@@ -1450,7 +1452,7 @@ class PosDialogs {
                           ),
                           label: Text(
                             tpl,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.creamText,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
@@ -1468,7 +1470,7 @@ class PosDialogs {
                     TextField(
                       controller: titleCtrl,
                       autofocus: true,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.creamText,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1500,7 +1502,7 @@ class PosDialogs {
                     ),
 
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       'ДЖЕРЕЛО СПИСАННЯ КОШТІВ:',
                       style: TextStyle(
                         color: OsnovaTheme.sageMuted,
@@ -1551,14 +1553,14 @@ class PosDialogs {
                             color: Colors.orangeAccent.withValues(alpha: 0.5),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.warning_amber_rounded,
                               color: Colors.orangeAccent,
                               size: 18,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Увага: сума витрати перевищує поточну готівку в касовій шухляді.',
@@ -1579,7 +1581,7 @@ class PosDialogs {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
+                          child: Text(
                             'Скасувати',
                             style: TextStyle(color: OsnovaTheme.sageMuted),
                           ),
@@ -1680,7 +1682,7 @@ class PosDialogs {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: OsnovaTheme.sageMuted,
                       fontSize: 10.5,
                     ),
@@ -1790,7 +1792,7 @@ class PosDialogs {
                             ),
                             child: Text(
                               lines.join('\n'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 13,
                                 color: OsnovaTheme.creamText,
@@ -1810,14 +1812,14 @@ class PosDialogs {
                                     .withValues(alpha: 0.45),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.check_circle_rounded,
                                   color: OsnovaTheme.liveGreen,
                                   size: 18,
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     'Z-звіт автоматично надіслано команді в Telegram. Автозакриття налаштовано на 23:50.',
@@ -1842,14 +1844,14 @@ class PosDialogs {
                                 color: OsnovaTheme.gold.withValues(alpha: 0.35),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.print_disabled_outlined,
                                   color: OsnovaTheme.goldBright,
                                   size: 18,
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     'Принтер Xprinter не підключено — звіт можна надіслати файлом у Telegram.',
@@ -1874,7 +1876,7 @@ class PosDialogs {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text(
+                      child: Text(
                         'Закрити',
                         style: TextStyle(color: OsnovaTheme.sageMuted),
                       ),
@@ -2004,7 +2006,7 @@ class PosDialogs {
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameCtrl,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: OsnovaTheme.creamText,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2022,7 +2024,8 @@ class PosDialogs {
                             onChanged: (_) => setDialogState(() {}),
                             keyboardType:
                                 const TextInputType.numberWithOptions(
-                                    decimal: true),
+                              decimal: true,
+                            ),
                             decoration: _premiumInput(
                               label: 'Ціна продажу',
                               suffixText: 'грн',
@@ -2036,7 +2039,8 @@ class PosDialogs {
                             onChanged: (_) => setDialogState(() {}),
                             keyboardType:
                                 const TextInputType.numberWithOptions(
-                                    decimal: true),
+                              decimal: true,
+                            ),
                             decoration: _premiumInput(
                               label: 'Собівартість',
                               suffixText: 'грн',
@@ -2051,7 +2055,7 @@ class PosDialogs {
                         alignment: Alignment.centerRight,
                         child: Text(
                           'Чиста маржа: +${MoneyFormatter.format(margin)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: OsnovaTheme.liveGreen,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -2092,7 +2096,7 @@ class PosDialogs {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
+                          child: Text(
                             'Скасувати',
                             style: TextStyle(color: OsnovaTheme.sageMuted),
                           ),
@@ -2206,7 +2210,7 @@ class PosDialogs {
                       trailing: IconButton(
                         tooltip: 'Оновити пошук у мережі',
                         onPressed: isScanning ? null : runScan,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.refresh_rounded,
                           color: OsnovaTheme.goldBright,
                         ),
@@ -2225,7 +2229,7 @@ class PosDialogs {
                             color: OsnovaTheme.gold.withValues(alpha: 0.25),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(
@@ -2236,7 +2240,7 @@ class PosDialogs {
                                 color: OsnovaTheme.goldBright,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Text(
                               'Сканування локальної мережі (порт 9100)...',
                               style: TextStyle(
@@ -2258,14 +2262,14 @@ class PosDialogs {
                             color: OsnovaTheme.gold.withValues(alpha: 0.35),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.wifi_find_rounded,
                               color: OsnovaTheme.goldBright,
                               size: 22,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'Автопошук не знайшов принтер. Перевірте живлення Xprinter або вкажіть IP-адресу вручну нижче.',
@@ -2280,7 +2284,7 @@ class PosDialogs {
                         ),
                       )
                     else ...[
-                      const Text(
+                      Text(
                         'ЗНАЙДЕНІ ПРИСТРОЇ В МЕРЕЖІ:',
                         style: TextStyle(
                           color: OsnovaTheme.goldBright,
@@ -2324,7 +2328,7 @@ class PosDialogs {
                                           .withValues(alpha: 0.16),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.print_rounded,
                                       color: OsnovaTheme.goldBright,
                                       size: 20,
@@ -2338,13 +2342,13 @@ class PosDialogs {
                                       children: [
                                         Text(
                                           'Xprinter ($ip)',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: OsnovaTheme.creamText,
                                             fontWeight: FontWeight.w900,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const Text(
+                                        Text(
                                           'TCP/IP RAW • Порт 9100',
                                           style: TextStyle(
                                             color: OsnovaTheme.sageMuted,
@@ -2355,7 +2359,7 @@ class PosDialogs {
                                     ),
                                   ),
                                   if (isSelected)
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle_rounded,
                                       color: OsnovaTheme.liveGreen,
                                       size: 22,
@@ -2373,8 +2377,9 @@ class PosDialogs {
                     // Поле ручного вводу IP
                     TextField(
                       controller: manualIpCtrl,
-                      onChanged: (v) => setDialogState(() => selectedIp = v.trim()),
-                      style: const TextStyle(
+                      onChanged: (v) =>
+                          setDialogState(() => selectedIp = v.trim()),
+                      style: TextStyle(
                         color: OsnovaTheme.creamText,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2386,7 +2391,7 @@ class PosDialogs {
                     ),
 
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       'ШИРИНА ТЕРМОСТРІЧКИ:',
                       style: TextStyle(
                         color: OsnovaTheme.sageMuted,

@@ -196,7 +196,10 @@ class _OsnovaToastWidgetState extends State<_OsnovaToastWidget>
                   onTap: _dismiss,
                   onVerticalDragEnd: (_) => _dismiss(),
                   child: Container(
-                    constraints: const BoxConstraints(maxWidth: 430, minWidth: 280),
+                    constraints: const BoxConstraints(
+                      maxWidth: 430,
+                      minWidth: 280,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -233,17 +236,22 @@ class _OsnovaToastWidgetState extends State<_OsnovaToastWidget>
                                     color: accentColor.withValues(alpha: 0.16),
                                     borderRadius: BorderRadius.circular(11),
                                   ),
-                                  child: Icon(iconData, color: accentColor, size: 22),
+                                  child: Icon(
+                                    iconData,
+                                    color: accentColor,
+                                    size: 22,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Flexible(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         widget.message,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: OsnovaTheme.creamText,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14,
@@ -254,7 +262,7 @@ class _OsnovaToastWidgetState extends State<_OsnovaToastWidget>
                                         const SizedBox(height: 2),
                                         Text(
                                           widget.subtitle!,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: OsnovaTheme.sageMuted,
                                             fontSize: 12,
                                           ),

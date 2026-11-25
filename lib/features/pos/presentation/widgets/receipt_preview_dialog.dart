@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:osnova_pos/features/pos/data/services/fortune_generator.dart';
 import '../../../../core/theme/osnova_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../data/datasources/pos_local_datasource.dart';
 import '../../domain/entities/pos_entities.dart';
 import 'osnova_toast.dart';
+import 'receipt_print_template.dart';
 
 class ReceiptPreviewDialog extends StatefulWidget {
   final List<CartItemEntity> currentCart;
@@ -97,26 +99,60 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
   @override
   Widget build(BuildContext context) {
     final hasRealCart = widget.currentCart.isNotEmpty;
-    final previewLines = hasRealCart
+    final previewItems = hasRealCart
         ? widget.currentCart
-            .map((e) => (
-                  name: e.product.name,
-                  qty: e.qty,
-                  price: e.product.price,
-                  total: e.totalPrice,
-                ))
+            .map(
+              (e) => ReceiptPrintItem(
+                name: e.product.name,
+                qty: e.qty,
+                unitPriceText: MoneyFormatter.format(e.product.price),
+                totalPriceText: MoneyFormatter.format(e.totalPrice),
+              ),
+            )
             .toList()
         : [
-            (name: 'Капучіно (L)', qty: 1, price: 6000, total: 6000),
-            (name: 'Спартак', qty: 1, price: 10000, total: 10000),
+            ReceiptPrintItem(
+              name: 'Капучіно (L)',
+              qty: 1,
+              unitPriceText: MoneyFormatter.format(6000),
+              totalPriceText: MoneyFormatter.format(6000),
+            ),
+            ReceiptPrintItem(
+              name: 'Спартак',
+              qty: 1,
+              unitPriceText: MoneyFormatter.format(10000),
+              totalPriceText: MoneyFormatter.format(10000),
+            ),
           ];
 
-    final totalSum = previewLines.fold<int>(0, (s, e) => s + e.total);
+    final totalSum = hasRealCart
+        ? widget.currentCart.fold<int>(0, (s, e) => s + e.totalPrice)
+        : 16000;
+
     final payLabel = switch (widget.paymentMethod) {
       'card' => 'Картка (Термінал)',
       'oplata24' => 'Оплата24 (ПриватБанк)',
       _ => 'Готівка',
     };
+
+    final now = DateTime.now();
+    final sampleCode =
+        '763-${DateFormat('ddMMyy-HHmm').format(now)}-001-7630';
+
+    final previewData = ReceiptPrintData(
+      documentTitle: 'ТОВАРНИЙ ЧЕК',
+      receiptCode: sampleCode,
+      shiftReceiptLabel: 'Чек за зміну: №1',
+      dateTimeText: DateFormat('dd.MM.yyyy HH:mm').format(now),
+      items: previewItems,
+      grandTotalLabel: 'ДО СПЛАТИ:',
+      grandTotalValue: MoneyFormatter.format(totalSum),
+      paymentMethodText: payLabel,
+      fortuneText:
+          (_fortuneEnabled && _currentFortune.isNotEmpty) ? _currentFortune : null,
+      footerNote: 'Дякуємо, що завітали в OSNOVA!',
+      showSocials: true,
+    );
 
     return Dialog(
       backgroundColor: OsnovaTheme.surfaceCard,
@@ -134,7 +170,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ЛІВА ПАНЕЛЬ: Сцена термочека
+              // ЛІВА ПАНЕЛЬ: Точна копія термочека, що йде на Xprinter
               Expanded(
                 flex: 48,
                 child: Container(
@@ -153,7 +189,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.receipt_long_rounded,
                                 size: 16,
                                 color: OsnovaTheme.goldBright,
@@ -161,9 +197,9 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                               const SizedBox(width: 6),
                               Text(
                                 hasRealCart
-                                    ? 'ПОТОЧНИЙ ЧЕК'
-                                    : 'ЗРАЗОК ЧЕКА',
-                                style: const TextStyle(
+                                    ? 'ПОТОЧНИЙ ЧЕК (1:1)'
+                                    : 'ЗРАЗОК ЧЕКА (1:1)',
+                                style: TextStyle(
                                   color: OsnovaTheme.goldBright,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 12,
@@ -172,7 +208,6 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                               ),
                             ],
                           ),
-                          // Перемикач ширини прев'ю 80 / 58 мм
                           Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
@@ -204,194 +239,23 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            width: _preview80mm ? 315 : 242,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: _preview80mm ? 18 : 13,
-                              vertical: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFAF9F6),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: DefaultTextStyle(
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Roboto',
-                                fontSize: _preview80mm ? 13 : 11.5,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Center(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        'O S N O V A',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 21,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 2.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  const Text(
-                                    'Простір ігор, кави та подій\nм. Кропивницький, вул. А. Тарковського, 76/3',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    child: Divider(
-                                      thickness: 1.6,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  ...previewLines.map(
-                                    (line) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 7),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            line.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                '  ${line.qty} × ${MoneyFormatter.format(line.price)}',
-                                                style: const TextStyle(
-                                                  fontSize: 11.5,
-                                                ),
-                                              ),
-                                              Text(
-                                                MoneyFormatter.format(
-                                                  line.total,
-                                                ),
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 6),
-                                    child: Divider(
-                                      thickness: 1.6,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'ДО СПЛАТИ:',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      Text(
-                                        MoneyFormatter.format(totalSum),
-                                        style: const TextStyle(
-                                          fontSize: 17.5,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Оплата: $payLabel',
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  if (_fortuneEnabled &&
-                                      _currentFortune.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF2F0EA),
-                                        border: Border.all(
-                                          color: Colors.black87,
-                                          width: 1.3,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            '★ ЩАСЛИВЕ ПЕРЕДБАЧЕННЯ ★',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 0.6,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            _currentFortune,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 11.5,
-                                              fontStyle: FontStyle.italic,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    'Дякуємо, що завітали в OSNOVA!\nInstagram: @osnova_76.3',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                        child: Center(
+                          child: SingleChildScrollView(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: ReceiptPaperContent(
+                                data: previewData,
+                                is80mm: _preview80mm,
                               ),
                             ),
                           ),
@@ -418,14 +282,14 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                             gradient: OsnovaTheme.goldGradient,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.auto_awesome_rounded,
                             color: OsnovaTheme.bgDark,
                             size: 20,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -450,7 +314,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.close_rounded,
                             color: OsnovaTheme.sageMuted,
                           ),
@@ -460,7 +324,6 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
 
                     const SizedBox(height: 14),
 
-                    // Перемикач у преміальній картці (Material замість Container з color для коректного ListTile)
                     Material(
                       color: const Color(0xFF11261F),
                       shape: RoundedRectangleBorder(
@@ -477,7 +340,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                         ),
                         child: SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text(
+                          title: Text(
                             'Друкувати передбачення на чеку',
                             style: TextStyle(
                               color: OsnovaTheme.creamText,
@@ -485,7 +348,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                               fontSize: 13.5,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'Кожен гість отримає рандомне побажання внизу чека',
                             style: TextStyle(
                               color: OsnovaTheme.sageMuted,
@@ -502,7 +365,6 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
 
                     const SizedBox(height: 10),
 
-                    // Кнопка рандомної генерації
                     Container(
                       decoration: BoxDecoration(
                         gradient: _fortuneEnabled
@@ -553,7 +415,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'ВЛАСНІ ПЕРЕДБАЧЕННЯ ЗАКЛАДУ:',
                           style: TextStyle(
                             color: OsnovaTheme.goldBright,
@@ -573,7 +435,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                           ),
                           child: Text(
                             '${_customFortunes.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.goldBright,
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
@@ -588,7 +450,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                         Expanded(
                           child: TextField(
                             controller: _customFortuneCtrl,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: OsnovaTheme.creamText,
                               fontSize: 13,
                             ),
@@ -657,7 +519,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                           ),
                         ),
                         child: _customFortunes.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Text(
                                   'Працює вбудований генератор (24+ передбачення та конструктор фраз)',
                                   textAlign: TextAlign.center,
@@ -684,7 +546,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.star_rounded,
                                           size: 15,
                                           color: OsnovaTheme.goldBright,
@@ -693,7 +555,7 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                                         Expanded(
                                           child: Text(
                                             item['text'] as String,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: OsnovaTheme.creamText,
                                               fontSize: 12.5,
                                             ),
@@ -709,7 +571,8 @@ class _ReceiptPreviewDialogState extends State<ReceiptPreviewDialog> {
                                           onPressed: () async {
                                             await PosLocalDataSource.instance
                                                 .deleteCustomFortune(
-                                                    item['id'] as int);
+                                              item['id'] as int,
+                                            );
                                             await _initData();
                                           },
                                         ),
