@@ -5,34 +5,33 @@ class OsnovaSideNav extends StatelessWidget {
   final VoidCallback onPurchasesTap;
   final VoidCallback onReceiptPreviewTap;
   final VoidCallback onHistoryTap;
-  final VoidCallback onExpenseTap;
   final VoidCallback onXReportTap;
   final VoidCallback onYoutubeTap;
   final VoidCallback onSettingsTap;
+  final VoidCallback? onCashOpsTap;
+  final VoidCallback? onAbcTap;
+  final VoidCallback? onTelegramTap;
 
   const OsnovaSideNav({
     super.key,
     required this.onPurchasesTap,
     required this.onReceiptPreviewTap,
     required this.onHistoryTap,
-    required this.onExpenseTap,
     required this.onXReportTap,
     required this.onYoutubeTap,
     required this.onSettingsTap,
+    this.onCashOpsTap,
+    this.onAbcTap,
+    this.onTelegramTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
-      margin: const EdgeInsets.fromLTRB(12, 6, 0, 12),
+      width: 82,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
         color: OsnovaTheme.surfaceCard.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: OsnovaTheme.gold.withValues(alpha: 0.28),
-        ),
       ),
       child: Column(
         children: [
@@ -46,6 +45,15 @@ class OsnovaSideNav extends StatelessWidget {
                     isActive: true,
                     onTap: () {},
                   ),
+                  if (onCashOpsTap != null) ...[
+                    const SizedBox(height: 6),
+                    _SideNavItem(
+                      icon: Icons.swap_vert_rounded,
+                      iconColor: OsnovaTheme.liveGreen,
+                      label: 'Каса ±',
+                      onTap: onCashOpsTap!,
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   _SideNavItem(
                     icon: Icons.inventory_2_outlined,
@@ -66,16 +74,28 @@ class OsnovaSideNav extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   _SideNavItem(
-                    icon: Icons.remove_circle_outline_rounded,
-                    label: 'Витрата',
-                    onTap: onExpenseTap,
-                  ),
-                  const SizedBox(height: 6),
-                  _SideNavItem(
                     icon: Icons.analytics_outlined,
                     label: 'X-звіт',
                     onTap: onXReportTap,
                   ),
+                  if (onAbcTap != null) ...[
+                    const SizedBox(height: 6),
+                    _SideNavItem(
+                      icon: Icons.bar_chart_rounded,
+                      iconColor: OsnovaTheme.goldBright,
+                      label: 'ABC',
+                      onTap: onAbcTap!,
+                    ),
+                  ],
+                  if (onTelegramTap != null) ...[
+                    const SizedBox(height: 6),
+                    _SideNavItem(
+                      icon: Icons.campaign_rounded,
+                      iconColor: const Color(0xFF2AABEE),
+                      label: 'ТГ Події',
+                      onTap: onTelegramTap!,
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   _SideNavItem(
                     icon: Icons.play_circle_fill_rounded,
@@ -119,8 +139,8 @@ class _SideNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ??
-        (isActive ? OsnovaTheme.goldBright : OsnovaTheme.gold);
+    final effectiveIconColor =
+        iconColor ?? (isActive ? OsnovaTheme.goldBright : OsnovaTheme.gold);
 
     return Material(
       color: isActive
@@ -132,7 +152,7 @@ class _SideNavItem extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: isActive
@@ -143,7 +163,7 @@ class _SideNavItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 22, color: effectiveIconColor),
-              const SizedBox(height: 5),
+              const SizedBox(height: 4),
               Text(
                 label,
                 maxLines: 1,

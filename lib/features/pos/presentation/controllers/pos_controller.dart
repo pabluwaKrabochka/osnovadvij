@@ -1,11 +1,15 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:osnova_pos/features/pos/data/services/osnova_telegram_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../data/datasources/pos_local_datasource.dart';
 import '../../data/services/privat_terminal_service_impl.dart';
 import '../../domain/entities/pos_entities.dart';
 import '../../domain/repositories/pos_repositories.dart';
+import '../widgets/abc_analytics_dialog.dart';
+import '../widgets/cash_operations_z_report.dart';
 import '../widgets/receipt_print_template.dart';
 
 class CheckoutResult {
@@ -45,6 +49,9 @@ class PosController extends ChangeNotifier {
 
   final GlobalKey receiptPrintKey = GlobalKey();
   final Random _random = Random();
+  final ShiftAutoCloseScheduler _autoCloseScheduler = ShiftAutoCloseScheduler();
+
+  void Function(StandardZReportData report)? onAutoZReportCompleted;
 
   ShiftEntity? currentShift;
   List<ProductEntity> products = [];
@@ -64,6 +71,10 @@ class PosController extends ChangeNotifier {
 
   List<OrderHistoryEntity> shiftOrders = [];
   List<ExpenseEntity> shiftExpenses = [];
+  List<CashOperationRecord> shiftCashOperations = [];
+  int shiftServiceInTotal = 0;
+  int shiftServiceOutTotal = 0;
+  StandardZReportData? lastStandardZReport;
 
   ReceiptPrintData receiptPrintData = const ReceiptPrintData(
     documentTitle: 'ТОВАРНИЙ ЧЕК',
@@ -113,6 +124,20 @@ class PosController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _savedCategoryOrder = prefs.getStringList(_keyCategoryOrder) ?? [];
 
+    // Підтягуємо налаштування Telegram з SQLite та підписуємось на їх оновлення
+    final tgConfig = await PosLocalDataSource.instance.loadTelegramSettings();
+    OsnovaTelegramService.instance.onConfigSaved = (token, chatId) async {
+      await PosLocalDataSource.instance.saveTelegramSettings(
+        token: token,
+        chatId: chatId,
+      );
+    };
+    OsnovaTelegramService.instance.configure(
+      token: tgConfig.token,
+      targetChatId: tgConfig.chatId,
+      persist: false,
+    );
+
     currentShift = await _repository.getOrOpenShift(defaultOpeningCash: 0);
     products = await _repository.getActiveProducts();
 
@@ -127,15 +152,89 @@ class PosController extends ChangeNotifier {
         pbSettings.cashierPhone.isEmpty ? null : pbSettings.cashierPhone;
 
     await _refreshShiftData();
+    _startAutoCloseWatcher();
     notifyListeners();
+  }
+
+  void _startAutoCloseWatcher() {
+    if (currentShift == null) return;
+    _autoCloseScheduler.start(
+      currentShiftOpenedAt: DateTime.tryParse(currentShift!.openedAt),
+      onAutoCloseShift: ({required bool isAuto}) async {
+        await performAutoCloseShift();
+      },
+    );
+  }
+
+  /// Автоматичне закриття зміни о 23:50 або при відновленні світла наступного дня
+  Future<void> performAutoCloseShift() async {
+    if (currentShift == null) return;
+    await buildReport(isZReport: true, isAutoClosed: true);
+    final closedZ = lastStandardZReport;
+    final carryOverCash = closedZ?.expectedCashInDrawerCents ?? 0;
+
+    // Відкриваємо нову зміну з перенесенням залишку готівки в шухляді
+    currentShift = await _repository.getOrOpenShift(
+      defaultOpeningCash: carryOverCash,
+    );
+    await _refreshShiftData();
+    _startAutoCloseWatcher();
+    notifyListeners();
+
+    if (closedZ != null) {
+      onAutoZReportCompleted?.call(closedZ);
+    }
   }
 
   Future<void> _refreshShiftData() async {
     if (currentShift == null) return;
-    final summary = await _repository.getShiftSummary(currentShift!.id);
-    currentCashInDrawer = summary.expectedCashInDrawer;
-    shiftOrders = await _repository.getShiftOrders(currentShift!.id);
-    shiftExpenses = await _repository.getShiftExpenses(currentShift!.id);
+    final shiftId = currentShift!.id;
+
+    shiftCashOperations =
+        await PosLocalDataSource.instance.getShiftCashOperations(shiftId);
+    final opTotals =
+        await PosLocalDataSource.instance.getShiftCashOpTotals(shiftId);
+    shiftServiceInTotal = opTotals.serviceIn;
+    shiftServiceOutTotal = opTotals.serviceOut;
+
+    final summary = await _repository.getShiftSummary(shiftId);
+    currentCashInDrawer = summary.shift.openingCash +
+        summary.cashSales +
+        shiftServiceInTotal -
+        shiftServiceOutTotal -
+        summary.cashExpenses;
+
+    shiftOrders = await _repository.getShiftOrders(shiftId);
+    shiftExpenses = await _repository.getShiftExpenses(shiftId);
+  }
+
+  /// Службове внесення або винесення готівки (як у Poster / ДПС)
+  Future<void> addCashOperation(
+    CashOpType type,
+    int amountCents,
+    String reason,
+  ) async {
+    if (currentShift == null) return;
+    await PosLocalDataSource.instance.addCashOperation(
+      shiftId: currentShift!.id,
+      type: type,
+      amountCents: amountCents,
+      reason: reason,
+    );
+    await _refreshShiftData();
+    notifyListeners();
+
+    // Дублюємо операцію в робочий Telegram-чат команди
+    OsnovaTelegramService.instance.notifyCashOperation(
+      type: type,
+      amountCents: amountCents,
+      reason: reason,
+    );
+  }
+
+  /// Завантаження статистики продажів для ABC-аналізу
+  Future<List<ProductSalesStat>> loadAbcAnalytics({int daysBack = 30}) {
+    return PosLocalDataSource.instance.getProductSalesStats(daysBack: daysBack);
   }
 
   void selectCategory(String category) {
@@ -243,8 +342,15 @@ class PosController extends ChangeNotifier {
   Future<void> updateCashInDrawer(int newKopecks) async {
     if (currentShift == null) return;
     final summary = await _repository.getShiftSummary(currentShift!.id);
-    final newOpeningCash =
-        newKopecks - summary.cashSales + summary.cashExpenses;
+    final opTotals =
+        await PosLocalDataSource.instance.getShiftCashOpTotals(currentShift!.id);
+
+    final newOpeningCash = newKopecks -
+        summary.cashSales -
+        opTotals.serviceIn +
+        opTotals.serviceOut +
+        summary.cashExpenses;
+
     await _repository.updateOpeningCash(
       shiftId: currentShift!.id,
       amount: newOpeningCash,
@@ -383,7 +489,8 @@ class PosController extends ChangeNotifier {
     if (cart.isEmpty) {
       throw Exception('Кошик порожній');
     }
-    final itemsSummary = cart.map((e) => '${e.product.name} x${e.qty}').join(', ');
+    final itemsSummary =
+        cart.map((e) => '${e.product.name} x${e.qty}').join(', ');
     final purpose = itemsSummary.length > 90
         ? 'OSNOVA • ${itemsSummary.substring(0, 87)}...'
         : 'OSNOVA • $itemsSummary';
@@ -428,7 +535,8 @@ class PosController extends ChangeNotifier {
     try {
       await WidgetsBinding.instance.endOfFrame;
       await Future.delayed(const Duration(milliseconds: 50));
-      final pngBytes = await _printerService.captureWidgetAsImage(receiptPrintKey);
+      final pngBytes =
+          await _printerService.captureWidgetAsImage(receiptPrintKey);
       if (pngBytes == null) {
         return 'Не вдалося сформувати зображення чека';
       }
@@ -528,13 +636,43 @@ class PosController extends ChangeNotifier {
     );
   }
 
-  Future<ShiftReportEntity?> buildReport({required bool isZReport}) async {
+  Future<ShiftReportEntity?> buildReport({
+    required bool isZReport,
+    bool isAutoClosed = false,
+  }) async {
     if (currentShift == null) return null;
 
-    final summary = await _repository.getShiftSummary(currentShift!.id);
-    final expenses = await _repository.getShiftExpenses(currentShift!.id);
+    final shiftId = currentShift!.id;
+    final summary = await _repository.getShiftSummary(shiftId);
+    final expenses = await _repository.getShiftExpenses(shiftId);
+    final cashOps =
+        await PosLocalDataSource.instance.getShiftCashOperations(shiftId);
+    final opTotals =
+        await PosLocalDataSource.instance.getShiftCashOpTotals(shiftId);
+
+    final expectedDrawer = summary.shift.openingCash +
+        summary.cashSales +
+        opTotals.serviceIn -
+        opTotals.serviceOut -
+        summary.cashExpenses;
+
     final now = DateTime.now();
     final formattedNow = DateFormat('dd.MM.yyyy HH:mm').format(now);
+
+    lastStandardZReport = StandardZReportData(
+      shiftNumber: summary.shift.id,
+      openedAt: DateTime.tryParse(summary.shift.openedAt) ?? now,
+      closedAt: now,
+      isAutoClosed: isAutoClosed,
+      openingCashCents: summary.shift.openingCash,
+      cashSalesCents: summary.cashSales,
+      cardTerminalSalesCents: summary.cardSales + summary.oplata24Sales,
+      receiptsCount: summary.ordersCount,
+      serviceInTotalCents: opTotals.serviceIn,
+      serviceOutTotalCents: opTotals.serviceOut,
+      expensesTotalCents: summary.cashExpenses,
+      operations: cashOps,
+    );
 
     receiptPrintData = ReceiptPrintData(
       documentTitle: isZReport
@@ -549,7 +687,7 @@ class PosController extends ChangeNotifier {
           isBold: true,
         ),
         ReceiptSummaryRow(
-          label: 'Розмін на старті:',
+          label: 'Залишок на старті:',
           value: MoneyFormatter.format(summary.shift.openingCash),
         ),
         ReceiptSummaryRow(
@@ -566,6 +704,14 @@ class PosController extends ChangeNotifier {
           value: MoneyFormatter.format(summary.cashSales),
         ),
         ReceiptSummaryRow(
+          label: '+ Службове внесення:',
+          value: MoneyFormatter.format(opTotals.serviceIn),
+        ),
+        ReceiptSummaryRow(
+          label: '- Службове винесення:',
+          value: '-${MoneyFormatter.format(opTotals.serviceOut)}',
+        ),
+        ReceiptSummaryRow(
           label: 'Витрати з каси:',
           value: '-${MoneyFormatter.format(summary.cashExpenses)}',
         ),
@@ -575,7 +721,7 @@ class PosController extends ChangeNotifier {
         ),
         ReceiptSummaryRow(
           label: 'Очікувана готівка в касі:',
-          value: MoneyFormatter.format(summary.expectedCashInDrawer),
+          value: MoneyFormatter.format(expectedDrawer),
           isBold: true,
         ),
       ],
@@ -587,9 +733,11 @@ class PosController extends ChangeNotifier {
 
     if (isZReport) {
       await _repository.closeShift(
-        shiftId: currentShift!.id,
-        closingCash: summary.expectedCashInDrawer,
+        shiftId: shiftId,
+        closingCash: expectedDrawer,
       );
+      // Автоматично відправляємо Z-звіт команді в Telegram
+      await OsnovaTelegramService.instance.notifyZReport(lastStandardZReport!);
     }
 
     notifyListeners();
@@ -606,7 +754,7 @@ class PosController extends ChangeNotifier {
       openingCash: summary.shift.openingCash,
       cashDrawerExpenses: summary.cashExpenses,
       externalExpenses: summary.cardExpenses,
-      expectedCashInDrawer: summary.expectedCashInDrawer,
+      expectedCashInDrawer: expectedDrawer,
       expensesList: expenses,
     );
   }
@@ -621,6 +769,8 @@ class PosController extends ChangeNotifier {
       if (report.oplata24Sales > 0)
         'Виручка (Оплата24):   ${MoneyFormatter.format(report.oplata24Sales)}',
       'Виручка (Готівка):    ${MoneyFormatter.format(report.cashSales)}',
+      '+ Службове внесення:  ${MoneyFormatter.format(shiftServiceInTotal)}',
+      '- Службове винесення:-${MoneyFormatter.format(shiftServiceOutTotal)}',
       'Витрати з каси:      -${MoneyFormatter.format(report.cashDrawerExpenses)}',
       'Витрати з картки:    -${MoneyFormatter.format(report.externalExpenses)}',
       '--------------------------------',
@@ -631,5 +781,11 @@ class PosController extends ChangeNotifier {
 
   Future<void> exportReportToTelegram(ShiftReportEntity report) {
     return _exportService.shareReportFile(report);
+  }
+
+  @override
+  void dispose() {
+    _autoCloseScheduler.dispose();
+    super.dispose();
   }
 }

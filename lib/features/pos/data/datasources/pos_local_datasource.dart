@@ -2,7 +2,8 @@ import 'package:osnova_pos/features/pos/data/services/fortune_generator.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/pos_entities.dart';
-
+import '../../presentation/widgets/abc_analytics_dialog.dart';
+import '../../presentation/widgets/cash_operations_z_report.dart';
 
 typedef DbRow = Map<String, dynamic>;
 typedef DbRowList = List<DbRow>;
@@ -32,7 +33,7 @@ class PosLocalDataSource {
 
     return openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE shifts (
@@ -42,6 +43,17 @@ class PosLocalDataSource {
             opening_cash INTEGER NOT NULL DEFAULT 0,
             closing_cash INTEGER,
             status TEXT NOT NULL DEFAULT 'open'
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE cash_operations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shift_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            amount INTEGER NOT NULL DEFAULT 0,
+            reason TEXT NOT NULL,
+            created_at TEXT NOT NULL
           )
         ''');
 
@@ -165,8 +177,65 @@ class PosLocalDataSource {
         "ALTER TABLE shifts ADD COLUMN status TEXT NOT NULL DEFAULT 'open'",
       );
     }
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tg_event_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        topic_id INTEGER,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
 
-    // 2. Таблиця products
+    final catCountRes =
+        await db.rawQuery('SELECT COUNT(*) AS cnt FROM tg_event_categories');
+    final catCount = (catCountRes.first['cnt'] as int?) ?? 0;
+    if (catCount == 0) {
+      final defaults = [
+        {'name': 'Мафія', 'topic_id': null, 'sort_order': 1},
+        {'name': 'Настільні ігри', 'topic_id': null, 'sort_order': 2},
+        {'name': 'Квіз / Своя гра', 'topic_id': null, 'sort_order': 3},
+        {'name': 'Літературний клуб', 'topic_id': null, 'sort_order': 4},
+        {'name': 'КіноКуточок', 'topic_id': null, 'sort_order': 5},
+        {'name': 'Психологічні зустрічі', 'topic_id': null, 'sort_order': 6},
+        {'name': 'General', 'topic_id': null, 'sort_order': 7},
+      ];
+      for (final item in defaults) {
+        await db.insert('tg_event_categories', item);
+      }
+    }
+await db.execute('''
+      CREATE TABLE IF NOT EXISTS tg_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        date_time_text TEXT NOT NULL DEFAULT '',
+        price_text TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        tagged_subscriber_ids TEXT NOT NULL DEFAULT '',
+        topic_id INTEGER,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    // 2. Таблиця службових внесень / винесень (ДПС / Poster)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS cash_operations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shift_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL DEFAULT 0,
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tg_subscribers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        username TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT ''
+      )
+    ''');
+    // 3. Таблиця products
     final productCols = await db.rawQuery('PRAGMA table_info(products)');
     final productColNames = productCols.map((c) => c['name'] as String).toSet();
 
@@ -182,7 +251,7 @@ class PosLocalDataSource {
       );
     }
 
-    // 3. Таблиці закупок, передбачень та налаштувань
+    // 4. Таблиці закупок, передбачень та налаштувань
     await db.execute('''
       CREATE TABLE IF NOT EXISTS purchases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -222,7 +291,7 @@ class PosLocalDataSource {
       )
     ''');
 
-    // 4. Таблиця orders
+    // 5. Таблиця orders
     var orderCols = await db.rawQuery('PRAGMA table_info(orders)');
     var orderColNames = orderCols.map((c) => c['name'] as String).toSet();
 
@@ -247,7 +316,7 @@ class PosLocalDataSource {
     _orderColumns = orderCols.map((c) => c['name'] as String).toSet();
     _requiredOrderCols = _extractRequiredColumns(orderCols);
 
-    // 5. Таблиця order_items
+    // 6. Таблиця order_items
     var itemCols = await db.rawQuery('PRAGMA table_info(order_items)');
     var itemColNames = itemCols.map((c) => c['name'] as String).toSet();
 
@@ -395,6 +464,243 @@ class PosLocalDataSource {
       {'opening_cash': amount},
       where: 'id = ?',
       whereArgs: [shiftId],
+    );
+  }
+// ==================== КАТЕГОРІЇ ПОДІЙ ТА ПРИВ'ЯЗКА ДО ГІЛОК ТГ ====================
+
+  DbRowListFuture getTgEventCategories() async {
+    final db = await database;
+    return db.query('tg_event_categories', orderBy: 'sort_order ASC, id ASC');
+  }
+
+  Future<int> saveTgEventCategory({
+    int? id,
+    required String name,
+    int? topicId,
+  }) async {
+    final db = await database;
+    final cleanTopic = (topicId != null && topicId > 1) ? topicId : null;
+    final data = <String, dynamic>{
+      'name': name.trim(),
+      'topic_id': cleanTopic,
+    };
+
+    if (id != null) {
+      await db.update(
+        'tg_event_categories',
+        data,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return id;
+    } else {
+      data['sort_order'] = DateTime.now().millisecondsSinceEpoch;
+      return db.insert('tg_event_categories', data);
+    }
+  }
+
+  Future<void> deleteTgEventCategory(int id) async {
+    final db = await database;
+    await db.delete('tg_event_categories', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ==================== СЛУЖБОВЕ ВНЕСЕННЯ / ВИНЕСЕННЯ ====================
+
+  Future<void> addCashOperation({
+    required int shiftId,
+    required CashOpType type,
+    required int amountCents,
+    required String reason,
+  }) async {
+    final db = await database;
+    await db.insert('cash_operations', {
+      'shift_id': shiftId,
+      'type': type == CashOpType.serviceIn ? 'service_in' : 'service_out',
+      'amount': amountCents,
+      'reason': reason,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<CashOperationRecord>> getShiftCashOperations(int shiftId) async {
+    final db = await database;
+    final rows = await db.query(
+      'cash_operations',
+      where: 'shift_id = ?',
+      whereArgs: [shiftId],
+      orderBy: 'id ASC',
+    );
+
+    return rows.map((r) {
+      final rawType = r['type'] as String? ?? 'service_in';
+      return CashOperationRecord(
+        id: r['id'] as int,
+        type: rawType == 'service_out'
+            ? CashOpType.serviceOut
+            : CashOpType.serviceIn,
+        amountCents: (r['amount'] as int?) ?? 0,
+        reason: (r['reason'] as String?) ?? '',
+        createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ??
+            DateTime.now(),
+      );
+    }).toList();
+  }
+
+  Future<({int serviceIn, int serviceOut})> getShiftCashOpTotals(
+    int shiftId,
+  ) async {
+    final ops = await getShiftCashOperations(shiftId);
+    int serviceIn = 0;
+    int serviceOut = 0;
+    for (final op in ops) {
+      if (op.type == CashOpType.serviceIn) {
+        serviceIn += op.amountCents;
+      } else {
+        serviceOut += op.amountCents;
+      }
+    }
+    return (serviceIn: serviceIn, serviceOut: serviceOut);
+  }
+// ==================== ПОДІЇ ДЛЯ TELEGRAM (СТВОРЕННЯ / РЕДАГУВАННЯ) ====================
+
+  DbRowListFuture getTgEvents() async {
+    final db = await database;
+    return db.query('tg_events', orderBy: 'id DESC');
+  }
+
+  Future<int> saveTgEvent({
+    int? id,
+    required String category,
+    required String title,
+    required String dateTimeText,
+    required String priceText,
+    required String description,
+    required List<int> taggedSubscriberIds,
+    int? topicId,
+  }) async {
+    final db = await database;
+    final data = <String, dynamic>{
+      'category': category.trim(),
+      'title': title.trim(),
+      'date_time_text': dateTimeText.trim(),
+      'price_text': priceText.trim(),
+      'description': description.trim(),
+      'tagged_subscriber_ids': taggedSubscriberIds.join(','),
+      'topic_id': (topicId != null && topicId > 1) ? topicId : null,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (id != null) {
+      await db.update(
+        'tg_events',
+        data,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return id;
+    } else {
+      return db.insert('tg_events', data);
+    }
+  }
+
+  Future<void> deleteTgEvent(int id) async {
+    final db = await database;
+    await db.delete('tg_events', where: 'id = ?', whereArgs: [id]);
+  }
+// ==================== УЧАСНИКИ ТА ТЕГИ ДЛЯ TELEGRAM ====================
+
+  DbRowListFuture getTgSubscribers() async {
+    final db = await database;
+    return db.query('tg_subscribers', orderBy: 'id DESC');
+  }
+
+  Future<void> addTgSubscriber({
+    required String name,
+    required String username,
+    required List<String> tags,
+  }) async {
+    final db = await database;
+    var cleanUser = username.trim();
+    if (cleanUser.isNotEmpty && !cleanUser.startsWith('@')) {
+      cleanUser = '@$cleanUser';
+    }
+    await db.insert('tg_subscribers', {
+      'name': name.trim(),
+      'username': cleanUser,
+      'tags': tags.join(','),
+    });
+  }
+
+  Future<void> deleteTgSubscriber(int id) async {
+    final db = await database;
+    await db.delete('tg_subscribers', where: 'id = ?', whereArgs: [id]);
+  }
+  // ==================== ABC-АНАЛІЗ ПРОДАЖІВ ====================
+
+  Future<List<ProductSalesStat>> getProductSalesStats({
+    int daysBack = 30,
+  }) async {
+    final db = await database;
+    final sinceIso = DateTime.now()
+        .subtract(Duration(days: daysBack))
+        .toIso8601String();
+
+    final rows = await db.rawQuery('''
+      SELECT
+        oi.product_name AS name,
+        COALESCE(MAX(p.category), 'Основне меню') AS category,
+        SUM(oi.qty) AS qty_sold,
+        SUM(oi.qty * oi.price) AS revenue_cents
+      FROM order_items oi
+      INNER JOIN orders o ON o.id = oi.order_id
+      LEFT JOIN products p ON p.name = oi.product_name
+      WHERE o.created_at >= ?
+      GROUP BY oi.product_name
+      ORDER BY revenue_cents DESC
+    ''', [sinceIso]);
+
+    return rows.map((r) {
+      return ProductSalesStat(
+        name: (r['name'] as String?) ?? 'Без назви',
+        category: (r['category'] as String?) ?? 'Основне меню',
+        qtySold: (r['qty_sold'] as num?)?.toInt() ?? 0,
+        revenueCents: (r['revenue_cents'] as num?)?.toInt() ?? 0,
+      );
+    }).toList();
+  }
+
+  // ==================== НАЛАШТУВАННЯ TELEGRAM ====================
+
+  Future<({String token, String chatId})> loadTelegramSettings() async {
+    final db = await database;
+    final rows = await db.query(
+      'pos_settings',
+      where: 'key IN (?, ?)',
+      whereArgs: ['tg_bot_token', 'tg_chat_id'],
+    );
+    String token = '';
+    String chatId = '';
+    for (final r in rows) {
+      if (r['key'] == 'tg_bot_token') token = (r['value'] as String?) ?? '';
+      if (r['key'] == 'tg_chat_id') chatId = (r['value'] as String?) ?? '';
+    }
+    return (token: token, chatId: chatId);
+  }
+
+  Future<void> saveTelegramSettings({
+    required String token,
+    required String chatId,
+  }) async {
+    final db = await database;
+    await db.insert(
+      'pos_settings',
+      {'key': 'tg_bot_token', 'value': token.trim()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await db.insert(
+      'pos_settings',
+      {'key': 'tg_chat_id', 'value': chatId.trim()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
@@ -674,6 +980,8 @@ class PosLocalDataSource {
       }
     }
 
+    final cashOpTotals = await getShiftCashOpTotals(shiftId);
+
     final topRows = await db.rawQuery('''
       SELECT oi.product_name, SUM(oi.qty) AS total_qty
       FROM order_items oi
@@ -688,7 +996,11 @@ class PosLocalDataSource {
       topProducts[row['product_name'] as String] = (row['total_qty'] as int?) ?? 0;
     }
 
-    final expectedCash = shift.openingCash + cashSales - cashExpenses;
+    final expectedCash = shift.openingCash +
+        cashSales +
+        cashOpTotals.serviceIn -
+        cashOpTotals.serviceOut -
+        cashExpenses;
 
     return ShiftSummaryEntity(
       shift: shift,

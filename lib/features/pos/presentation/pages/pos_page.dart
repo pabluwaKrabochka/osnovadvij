@@ -5,17 +5,20 @@ import 'package:osnova_pos/features/pos/presentation/widgets/oplata24_dialogs.da
 import 'package:osnova_pos/features/pos/presentation/widgets/osnova_side_nav.dart';
 import 'package:osnova_pos/features/pos/presentation/widgets/receipt_preview_dialog.dart';
 import '../../../../core/theme/osnova_theme.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../controllers/pos_controller.dart';
+import '../widgets/abc_analytics_dialog.dart';
 import '../widgets/animated_product_card.dart';
 import '../widgets/botanical_decorations.dart';
 import '../widgets/cart_panel.dart';
+import '../widgets/cash_operations_z_report.dart';
 import '../widgets/osnova_brand_logo.dart';
 import '../widgets/osnova_toast.dart';
 import '../widgets/pos_dialogs.dart';
 import '../widgets/receipt_print_template.dart';
 import 'intro_page.dart';
 import 'youtube_channel_page.dart';
-
+import 'telegram_events_page.dart';
 class PosPage extends StatefulWidget {
   final PosController controller;
 
@@ -29,9 +32,24 @@ class _PosPageState extends State<PosPage> {
   @override
   void initState() {
     super.initState();
+    widget.controller.onAutoZReportCompleted = (zReport) {
+      if (!mounted) return;
+      OsnovaToast.success(
+        context,
+        'Автоматичний Z-звіт №${zReport.shiftNumber} (23:50)',
+        subtitle:
+            'Зміну закрито, залишок: ${MoneyFormatter.format(zReport.expectedCashInDrawerCents)}',
+      );
+    };
     if (widget.controller.currentShift == null) {
       widget.controller.initPos();
     }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.onAutoZReportCompleted = null;
+    super.dispose();
   }
 
   void _showPrintStatus(String? error) {
@@ -50,6 +68,16 @@ class _PosPageState extends State<PosPage> {
         subtitle: error,
       );
     }
+  }
+
+  Future<void> _openAbcAnalytics() async {
+    final stats = await widget.controller.loadAbcAnalytics(daysBack: 30);
+    if (!mounted) return;
+    await AbcAnalyticsDialog.show(
+      context,
+      salesData: stats,
+      periodTitle: 'Аналітика продажів за останні 30 днів',
+    );
   }
 
   @override
@@ -115,7 +143,6 @@ class _PosPageState extends State<PosPage> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // Живий індикатор активної касової зміни
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -163,7 +190,7 @@ class _PosPageState extends State<PosPage> {
                         ],
                       ),
                       actions: [
-                        // Кнопка швидкого додавання товару в меню
+                        // Швидке додавання позиції в меню
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             vertical: 10,
@@ -200,7 +227,7 @@ class _PosPageState extends State<PosPage> {
                           ),
                         ),
 
-                        // Кнопка налаштувань Оплата24
+                        // Оплата24 ПриватБанк
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             vertical: 10,
@@ -249,7 +276,7 @@ class _PosPageState extends State<PosPage> {
                           ),
                         ),
 
-                        // Кнопка закриття зміни (Z-звіт)
+                        // Z-звіт (стандарт ДПС / Poster)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             vertical: 10,
@@ -288,7 +315,6 @@ class _PosPageState extends State<PosPage> {
                       ],
                     ),
                   ),
-                  // Золота градієнтна лінія-акцент під шапкою
                   Container(
                     height: 1.5,
                     decoration: BoxDecoration(
@@ -309,7 +335,6 @@ class _PosPageState extends State<PosPage> {
           ),
           body: Stack(
             children: [
-              // Фоновий ботанічний декор + фірмове світлове обрамлення OSNOVA
               const BotanicalBackground(),
               Positioned.fill(
                 child: IgnorePointer(
@@ -318,20 +343,16 @@ class _PosPageState extends State<PosPage> {
                   ),
                 ),
               ),
-
-              // Невидимий шаблон для рендеру чека на Xprinter
               ReceiptPrintTemplate(
                 boundaryKey: ctrl.receiptPrintKey,
                 data: ctrl.receiptPrintData,
                 is80mm: ctrl.is80mmPrinter,
               ),
-
-              // Основна робоча зона каси з фірмовим обрамленням блоків
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                padding: const EdgeInsets.all(10),
                 child: Row(
                   children: [
-                    // 1. Ліва панель навігації в обсидіановій рамці
+                    // 1. Ліва панель навігації з усіма інструментами каси
                     Container(
                       decoration: BoxDecoration(
                         color: OsnovaTheme.bgDark.withValues(alpha: 0.72),
@@ -350,7 +371,11 @@ class _PosPageState extends State<PosPage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(19),
-                        child: OsnovaSideNav(
+                       child: OsnovaSideNav(
+                          onCashOpsTap: () => CashOperationDialog.show(
+                            context,
+                            onConfirm: ctrl.addCashOperation,
+                          ),
                           onPurchasesTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -367,14 +392,20 @@ class _PosPageState extends State<PosPage> {
                           },
                           onHistoryTap: () =>
                               PosDialogs.showShiftHistoryDialog(context, ctrl),
-                          onExpenseTap: () =>
-                              PosDialogs.showExpenseDialog(context, ctrl),
                           onXReportTap: () => PosDialogs.showReportDialog(
                             context,
                             ctrl,
                             isZReport: false,
                             onPrintFinished: _showPrintStatus,
                           ),
+                          onAbcTap: _openAbcAnalytics,
+                          onTelegramTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const TelegramEventsPage(),
+                              ),
+                            );
+                          },
                           onYoutubeTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -391,10 +422,9 @@ class _PosPageState extends State<PosPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 10),
 
-                    // 2. Центральна вітрина категорій і товарів у преміум-рамці
+                    // 2. Центральна вітрина категорій і товарів
                     Expanded(
                       flex: 65,
                       child: Container(
@@ -417,7 +447,6 @@ class _PosPageState extends State<PosPage> {
                           borderRadius: BorderRadius.circular(21),
                           child: Column(
                             children: [
-                              // Верхня панель категорій із золотим підкресленням
                               Container(
                                 height: 58,
                                 decoration: BoxDecoration(
@@ -628,8 +657,6 @@ class _PosPageState extends State<PosPage> {
                                         },
                                       ),
                                     ),
-
-                                    // Компактний бейдж кількості позицій у категорії
                                     Container(
                                       margin: const EdgeInsets.only(right: 12),
                                       padding: const EdgeInsets.symmetric(
@@ -657,8 +684,6 @@ class _PosPageState extends State<PosPage> {
                                   ],
                                 ),
                               ),
-
-                              // Сітка карток товарів
                               Expanded(
                                 child: filteredCount == 0
                                     ? Center(
@@ -728,10 +753,9 @@ class _PosPageState extends State<PosPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 10),
 
-                    // 3. Права панель кошика в акцентній золотій рамці
+                    // 3. Права панель кошика
                     Expanded(
                       flex: 35,
                       child: Container(
@@ -819,7 +843,6 @@ class _PosPageState extends State<PosPage> {
 class _PosAmbientFramePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Делікатне золоте радіальне підсвічування по центру
     final centerGlow = Paint()
       ..shader = RadialGradient(
         center: const Alignment(-0.15, -0.1),
@@ -831,7 +854,6 @@ class _PosAmbientFramePainter extends CustomPainter {
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, centerGlow);
 
-    // 2. Архітектурні золоті HUD-кутики по периметру робочого простору
     final bracketPaint = Paint()
       ..color = OsnovaTheme.goldBright.withValues(alpha: 0.38)
       ..style = PaintingStyle.stroke
@@ -840,7 +862,6 @@ class _PosAmbientFramePainter extends CustomPainter {
     const m = 4.0;
     const len = 18.0;
 
-    // Лівий верхній
     canvas.drawPath(
       Path()
         ..moveTo(m, m + len)
@@ -848,7 +869,6 @@ class _PosAmbientFramePainter extends CustomPainter {
         ..lineTo(m + len, m),
       bracketPaint,
     );
-    // Правий верхній
     canvas.drawPath(
       Path()
         ..moveTo(size.width - m - len, m)
@@ -856,7 +876,6 @@ class _PosAmbientFramePainter extends CustomPainter {
         ..lineTo(size.width - m, m + len),
       bracketPaint,
     );
-    // Лівий нижній
     canvas.drawPath(
       Path()
         ..moveTo(m, size.height - m - len)
@@ -864,7 +883,6 @@ class _PosAmbientFramePainter extends CustomPainter {
         ..lineTo(m + len, size.height - m),
       bracketPaint,
     );
-    // Правий нижній
     canvas.drawPath(
       Path()
         ..moveTo(size.width - m - len, size.height - m)
