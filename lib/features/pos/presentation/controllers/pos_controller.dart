@@ -241,7 +241,18 @@ class PosController extends ChangeNotifier {
     return PosLocalDataSource.instance.getProductSalesStats(daysBack: daysBack);
   }
 
+ Future<List<ProductSalesStat>> loadAbcAnalyticsRange(
+    DateTime start,
+    DateTime end,
+  ) {
+    return PosLocalDataSource.instance.getProductSalesStatsByRange(
+      start: start,
+      end: end,
+    );
+  }
+
   void selectCategory(String category) {
+    if (selectedCategory == category) return;
     selectedCategory = category;
     notifyListeners();
   }
@@ -311,6 +322,12 @@ class PosController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void decrementProduct(int productId) {
+    final index = cart.indexWhere((item) => item.product.id == productId);
+    if (index == -1) return;
+    decrementCartItem(index);
+  }
+
   void decrementCartItem(int index) {
     if (index < 0 || index >= cart.length) return;
     final current = cart[index];
@@ -328,6 +345,7 @@ class PosController extends ChangeNotifier {
   }
 
   void setPaymentMethod(String method) {
+    if (paymentMethod == method) return;
     paymentMethod = method;
     notifyListeners();
   }

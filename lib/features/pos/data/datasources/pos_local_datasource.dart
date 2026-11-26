@@ -660,29 +660,59 @@ await db.execute('''
     final db = await database;
     await db.delete('tg_subscribers', where: 'id = ?', whereArgs: [id]);
   }
-  // ==================== ABC-АНАЛІЗ ПРОДАЖІВ ====================
+ // ==================== ABC-АНАЛІЗ ПРОДАЖІВ ====================
 
   Future<List<ProductSalesStat>> getProductSalesStats({
     int daysBack = 30,
+  }) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: daysBack));
+    return getProductSalesStatsByRange(start: start, end: now);
+  }
+
+  Future<List<ProductSalesStat>> getProductSalesStatsByRange({
+    required DateTime start,
+    required DateTime end,
   }) async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final normalizedStart = DateTime(start.year, start.month, start.day);
+    final normalizedEnd = DateTime(end.year, end.month, end.day);
+
+    // Якщо початкова дата ще не настала — продажів за неї бути не може
+    if (normalizedStart.isAfter(todayStart)) {
+      return [];
+    }
+
+    final effectiveEnd =
+        normalizedEnd.isAfter(todayStart) ? todayStart : normalizedEnd;
+    if (effectiveEnd.isBefore(normalizedStart)) {
+      return [];
+    }
+
     final db = await database;
-    final sinceIso = DateTime.now()
-        .subtract(Duration(days: daysBack))
-        .toIso8601String();
+    final startIso = normalizedStart.toIso8601String();
+    final endExclusiveIso =
+        effectiveEnd.add(const Duration(days: 1)).toIso8601String();
 
     final rows = await db.rawQuery('''
       SELECT
         oi.product_name AS name,
-        COALESCE(MAX(p.category), 'Основне меню') AS category,
+        COALESCE(
+          MAX(CASE WHEN p.is_active = 1 THEN p.category END),
+          MAX(p.category),
+          'Основне меню'
+        ) AS category,
         SUM(oi.qty) AS qty_sold,
         SUM(oi.qty * oi.price) AS revenue_cents
       FROM order_items oi
       INNER JOIN orders o ON o.id = oi.order_id
       LEFT JOIN products p ON p.name = oi.product_name
-      WHERE o.created_at >= ?
+      WHERE o.created_at >= ? AND o.created_at < ?
       GROUP BY oi.product_name
       ORDER BY revenue_cents DESC
-    ''', [sinceIso]);
+    ''', [startIso, endExclusiveIso]);
 
     return rows.map((r) {
       return ProductSalesStat(
@@ -693,7 +723,6 @@ await db.execute('''
       );
     }).toList();
   }
-
   // ==================== НАЛАШТУВАННЯ TELEGRAM ====================
 
   Future<({String token, String chatId})> loadTelegramSettings() async {

@@ -118,85 +118,81 @@ class _OsnovaSideNavState extends State<OsnovaSideNav> {
       ),
     ];
 
-    return Container(
-      width: 78,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            OsnovaTheme.bgDeep,
-            OsnovaTheme.surfaceCard,
-            OsnovaTheme.bgDeep,
+    return RepaintBoundary(
+      child: Container(
+        width: 78,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              OsnovaTheme.bgDeep,
+              OsnovaTheme.surfaceCard,
+              OsnovaTheme.bgDeep,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+                .withValues(alpha: isNeon ? 0.68 : 0.42),
+            width: isNeon ? 1.4 : 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.48),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+                  .withValues(alpha: isNeon ? 0.24 : 0.08),
+              blurRadius: isNeon ? 18 : 14,
+              spreadRadius: isNeon ? 1 : 0,
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-              .withValues(alpha: isNeon ? 0.68 : 0.42),
-          width: isNeon ? 1.4 : 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.48),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-          ),
-          BoxShadow(
-            color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                .withValues(alpha: isNeon ? 0.24 : 0.08),
-            blurRadius: isNeon ? 18 : 14,
-            spreadRadius: isNeon ? 1 : 0,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(21),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(top: 9, bottom: 7),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                        .withValues(alpha: 0.16),
-                    Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(21),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.only(top: 9, bottom: 7),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+                          .withValues(alpha: 0.16),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 1,
+                      color: OsnovaTheme.gold.withValues(alpha: 0.45),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Icon(
+                        isNeon ? Icons.bolt_rounded : Icons.diamond_outlined,
+                        size: 12,
+                        color: OsnovaTheme.goldBright,
+                      ),
+                    ),
+                    Container(
+                      width: 14,
+                      height: 1,
+                      color: OsnovaTheme.gold.withValues(alpha: 0.45),
+                    ),
                   ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 14,
-                    height: 1,
-                    color: OsnovaTheme.gold.withValues(alpha: 0.45),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Icon(
-                      isNeon ? Icons.bolt_rounded : Icons.diamond_outlined,
-                      size: 12,
-                      color: OsnovaTheme.goldBright,
-                    ),
-                  ),
-                  Container(
-                    width: 14,
-                    height: 1,
-                    color: OsnovaTheme.gold.withValues(alpha: 0.45),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: NotificationListener<ScrollMetricsNotification>(
-                onNotification: (_) {
-                  setState(() {});
-                  return false;
-                },
+              Expanded(
                 child: RawScrollbar(
                   controller: _scrollCtrl,
                   thumbVisibility: true,
@@ -242,8 +238,8 @@ class _OsnovaSideNavState extends State<OsnovaSideNav> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -491,6 +487,7 @@ class OsnovaThemePickerDialog extends StatelessWidget {
 
         return Dialog(
           backgroundColor: OsnovaTheme.surfaceCard,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
@@ -499,227 +496,236 @@ class OsnovaThemePickerDialog extends StatelessWidget {
               width: 1.5,
             ),
           ),
-          child: Container(
-            width: 540,
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: isNeon
-                  ? [
-                      BoxShadow(
-                        color: OsnovaTheme.neonGlow.withValues(alpha: 0.22),
-                        blurRadius: 28,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: OsnovaTheme.goldGradient,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.palette_rounded,
-                        color: OsnovaTheme.bgDark,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'АТМОСФЕРА ТА ТЕМА OSNOVA',
-                            style: TextStyle(
-                              color: OsnovaTheme.goldBright,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          Text(
-                            'Оберіть кольорову гаму під настрій зміни',
-                            style: TextStyle(
-                              color: OsnovaTheme.sageMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: OsnovaTheme.sageMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.62,
-                  children: OsnovaTheme.palettes.values.map((palette) {
-                    final selected = palette.id == activeId;
-
-                    return GestureDetector(
-                      onTap: () async {
-                        HapticFeedback.mediumImpact();
-                        if (controller != null) {
-                          await controller!.setTheme(palette.id);
-                        } else {
-                          await OsnovaTheme.setTheme(palette.id);
-                        }
-                        if (context.mounted) {
-                          OsnovaToast.success(
-                            context,
-                            'Тему змінено: ${palette.title}',
-                            subtitle: palette.subtitle,
-                          );
-                        }
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: palette.cardActiveGradientColors,
-                          ),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: selected
-                                ? (palette.isNeon
-                                    ? palette.neonGlow
-                                    : palette.goldBright)
-                                : palette.gold.withValues(alpha: 0.35),
-                            width: selected ? 2.0 : 1.1,
-                          ),
-                          boxShadow: [
-                            if (palette.isNeon || selected)
-                              BoxShadow(
-                                color: (palette.isNeon
-                                        ? palette.neonGlow
-                                        : palette.gold)
-                                    .withValues(alpha: selected ? 0.38 : 0.16),
-                                blurRadius: selected ? 18 : 10,
-                                spreadRadius: selected ? 1 : 0,
-                              ),
-                          ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 740),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: isNeon
+                    ? [
+                        BoxShadow(
+                          color: OsnovaTheme.neonGlow.withValues(alpha: 0.22),
+                          blurRadius: 28,
+                          spreadRadius: 2,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                      ]
+                    : null,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: OsnovaTheme.goldGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.palette_rounded,
+                            color: OsnovaTheme.bgDark,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'АТМОСФЕРА ТА ТЕМА OSNOVA',
+                                style: TextStyle(
+                                  color: OsnovaTheme.goldBright,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              Text(
+                                'Оберіть кольорову гаму під настрій зміни',
+                                style: TextStyle(
+                                  color: OsnovaTheme.sageMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: OsnovaTheme.sageMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.52,
+                      children: OsnovaTheme.palettes.values.map((palette) {
+                        final selected = palette.id == activeId;
+
+                        return GestureDetector(
+                          onTap: () async {
+                            HapticFeedback.mediumImpact();
+                            if (controller != null) {
+                              await controller!.setTheme(palette.id);
+                            } else {
+                              await OsnovaTheme.setTheme(palette.id);
+                            }
+                            if (context.mounted) {
+                              OsnovaToast.success(
+                                context,
+                                'Тему змінено: ${palette.title}',
+                                subtitle: palette.subtitle,
+                              );
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: palette.cardActiveGradientColors,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: selected
+                                    ? (palette.isNeon
+                                        ? palette.neonGlow
+                                        : palette.goldBright)
+                                    : palette.gold.withValues(alpha: 0.35),
+                                width: selected ? 2.0 : 1.1,
+                              ),
+                              boxShadow: [
+                                if (palette.isNeon || selected)
+                                  BoxShadow(
+                                    color: (palette.isNeon
+                                            ? palette.neonGlow
+                                            : palette.gold)
+                                        .withValues(
+                                      alpha: selected ? 0.38 : 0.16,
+                                    ),
+                                    blurRadius: selected ? 18 : 10,
+                                    spreadRadius: selected ? 1 : 0,
+                                  ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(7),
-                                  decoration: BoxDecoration(
-                                    color: palette.bgDeep,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: palette.gold.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    palette.icon,
-                                    size: 18,
-                                    color: palette.goldBright,
-                                  ),
-                                ),
-                                // Прев'ю кольорових точок палітри
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _ColorDot(color: palette.bgDark),
-                                    const SizedBox(width: 4),
-                                    _ColorDot(color: palette.gold),
-                                    const SizedBox(width: 4),
-                                    _ColorDot(
-                                      color: palette.neonGlow,
-                                      glow: palette.isNeon,
-                                    ),
-                                    if (selected) ...[
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 20,
+                                    Container(
+                                      padding: const EdgeInsets.all(6.5),
+                                      decoration: BoxDecoration(
+                                        color: palette.bgDeep,
+                                        borderRadius: BorderRadius.circular(9),
+                                        border: Border.all(
+                                          color:
+                                              palette.gold.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        palette.icon,
+                                        size: 17,
                                         color: palette.goldBright,
                                       ),
-                                    ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        _ColorDot(color: palette.bgDark),
+                                        const SizedBox(width: 3),
+                                        _ColorDot(color: palette.gold),
+                                        const SizedBox(width: 3),
+                                        _ColorDot(
+                                          color: palette.neonGlow,
+                                          glow: palette.isNeon,
+                                        ),
+                                        if (selected) ...[
+                                          const SizedBox(width: 6),
+                                          Icon(
+                                            Icons.check_circle_rounded,
+                                            size: 18,
+                                            color: palette.goldBright,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      palette.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: palette.creamText,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      palette.subtitle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: palette.sageMuted,
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  palette.title,
-                                  style: TextStyle(
-                                    color: palette.creamText,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  palette.subtitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: palette.sageMuted,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: OsnovaTheme.gold,
+                          foregroundColor: OsnovaTheme.bgDark,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Готово',
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: OsnovaTheme.gold,
-                      foregroundColor: OsnovaTheme.bgDark,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Готово',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -737,12 +743,15 @@ class _ColorDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 11,
-      height: 11,
+      width: 10,
+      height: 10,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 0.8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.45),
+          width: 0.8,
+        ),
         boxShadow: glow
             ? [
                 BoxShadow(

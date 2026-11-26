@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/osnova_theme.dart';
@@ -11,6 +10,7 @@ class AnimatedProductCard extends StatefulWidget {
   final int index;
   final int cartQty;
   final VoidCallback onTap;
+  final VoidCallback onDecrement;
   final VoidCallback onLongPress;
 
   const AnimatedProductCard({
@@ -19,6 +19,7 @@ class AnimatedProductCard extends StatefulWidget {
     required this.index,
     required this.cartQty,
     required this.onTap,
+    required this.onDecrement,
     required this.onLongPress,
   });
 
@@ -28,34 +29,41 @@ class AnimatedProductCard extends StatefulWidget {
 
 class _AnimatedProductCardState extends State<AnimatedProductCard>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ambientCtrl;
-  bool _isHovered = false;
+  late final AnimationController _shimmerCtrl;
   bool _isPressed = false;
-  Offset? _pointerLocalPos;
 
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(
+    _shimmerCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(milliseconds: 2800),
     );
+    if (widget.cartQty > 0) {
+      _shimmerCtrl.repeat();
+    }
+  }
 
-    Future.delayed(Duration(milliseconds: (widget.index % 12) * 850), () {
-      if (mounted) _ambientCtrl.repeat();
-    });
+  @override
+  void didUpdateWidget(covariant AnimatedProductCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasSelected = oldWidget.cartQty > 0;
+    final isSelected = widget.cartQty > 0;
+    if (isSelected && !wasSelected) {
+      _shimmerCtrl.repeat();
+    } else if (!isSelected && wasSelected) {
+      _shimmerCtrl.stop();
+      _shimmerCtrl.reset();
+    }
   }
 
   @override
   void dispose() {
-    _ambientCtrl.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
   }
 
-  Color _categoryAuraColor() {
-    if (OsnovaTheme.isNeon) {
-      return OsnovaTheme.neonGlow;
-    }
+  Color _categoryIndicatorColor() {
     final cat = widget.product.category;
     final name = widget.product.name.toLowerCase();
     if (cat == 'Холодні напої' ||
@@ -64,14 +72,16 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
         name.contains('айс')) {
       return const Color(0xFF38BDF8);
     }
-    if (cat == 'Смаколики') {
+    if (cat == 'Смаколики' ||
+        name.contains('тост') ||
+        name.contains('сендвіч')) {
       return const Color(0xFFF59E0B);
     }
     if (cat == 'Послуги' ||
         name.contains('мафія') ||
         name.contains('playstation') ||
         name.contains('квіз')) {
-      return const Color(0xFFA78BFA);
+      return const Color(0xFFC084FC);
     }
     if (cat == 'Додатки') {
       return OsnovaTheme.liveGreen;
@@ -82,55 +92,49 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
   @override
   Widget build(BuildContext context) {
     final isNeon = OsnovaTheme.isNeon;
-    final double scale = _isPressed
-        ? 0.945
-        : _isHovered
-            ? 1.03
-            : 1.0;
-
+    final isCyberpunk = OsnovaTheme.isCyberpunk;
     final bool hasItems = widget.cartQty > 0;
+    final double scale = _isPressed ? 0.96 : 1.0;
+
     final priceText = MoneyFormatter.formatShort(widget.product.price);
     final iconData = OsnovaTheme.iconForCategory(
       widget.product.category,
       widget.product.name,
     );
-    final auraColor = _categoryAuraColor();
+    final categoryColor = _categoryIndicatorColor();
 
-    final frameColor = _isHovered
+    final borderColor = hasItems
         ? (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.goldBright)
-        : hasItems
-            ? (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                .withValues(alpha: 0.95)
-            : (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                .withValues(alpha: isNeon ? 0.52 : 0.32);
+            .withValues(alpha: isNeon ? 0.92 : 0.68)
+        : (isNeon ? OsnovaTheme.neonGlow : Colors.white)
+            .withValues(alpha: isNeon ? 0.34 : 0.10);
 
-    return MouseRegion(
-      onEnter: (e) => setState(() {
-        _isHovered = true;
-        _pointerLocalPos = e.localPosition;
-      }),
-      onHover: (e) => setState(() => _pointerLocalPos = e.localPosition),
-      onExit: (_) => setState(() {
-        _isHovered = false;
-        _pointerLocalPos = null;
-      }),
-      cursor: SystemMouseCursors.click,
+    final frameColor = hasItems
+        ? (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.goldBright)
+            .withValues(alpha: 0.92)
+        : (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+            .withValues(alpha: isNeon ? 0.42 : 0.26);
+
+    final cardShape = OsnovaTheme.adaptiveShape(
+      radius: 16,
+      bevel: 10,
+      side: BorderSide(
+        color: borderColor,
+        width: hasItems ? 1.45 : (isNeon ? 1.15 : 1.0),
+      ),
+    );
+
+    return RepaintBoundary(
       child: GestureDetector(
-        onTapDown: (details) {
+        onTapDown: (_) {
           HapticFeedback.selectionClick();
-          setState(() {
-            _isPressed = true;
-            _pointerLocalPos = details.localPosition;
-          });
+          setState(() => _isPressed = true);
         },
         onTapUp: (_) {
           setState(() => _isPressed = false);
           widget.onTap();
         },
-        onTapCancel: () => setState(() {
-          _isPressed = false;
-          _pointerLocalPos = null;
-        }),
+        onTapCancel: () => setState(() => _isPressed = false),
         onLongPress: () {
           HapticFeedback.mediumImpact();
           setState(() => _isPressed = false);
@@ -138,371 +142,289 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
         },
         child: AnimatedScale(
           scale: scale,
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 105),
           curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              gradient: (_isHovered || hasItems)
+          child: Container(
+            decoration: ShapeDecoration(
+              shape: cardShape,
+              gradient: hasItems
                   ? OsnovaTheme.cardActiveGradient
                   : OsnovaTheme.cardGradient,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: (_isHovered || hasItems)
-                    ? (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.goldBright)
-                        .withValues(alpha: isNeon ? 0.92 : 0.55)
-                    : (isNeon ? OsnovaTheme.neonGlow : Colors.white)
-                        .withValues(alpha: isNeon ? 0.36 : 0.08),
-                width: isNeon ? 1.3 : 1.0,
-              ),
-              boxShadow: [
+              shadows: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.42),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
-                if (isNeon || _isHovered || hasItems)
+                if (hasItems)
                   BoxShadow(
                     color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                        .withValues(
-                      alpha: (_isHovered || hasItems)
-                          ? (isNeon ? 0.42 : 0.28)
-                          : (isNeon ? 0.14 : 0.0),
-                    ),
-                    blurRadius: (_isHovered || hasItems) ? 20 : 11,
-                    spreadRadius: (_isHovered || hasItems) ? 1 : 0,
-                    offset: const Offset(0, 2),
+                        .withValues(alpha: isNeon ? 0.32 : 0.22),
+                    blurRadius: 14,
                   ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.maxWidth;
-                  final h = constraints.maxHeight;
-
-                  final spotAlignment =
-                      _pointerLocalPos != null && w > 0 && h > 0
-                          ? Alignment(
-                              (_pointerLocalPos!.dx / w) * 2 - 1,
-                              (_pointerLocalPos!.dy / h) * 2 - 1,
-                            )
-                          : const Alignment(-0.75, -0.75);
-
-                  return Stack(
-                    children: [
-                      Positioned(
-                        top: -26,
-                        left: -26,
-                        child: Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                auraColor.withValues(
-                                  alpha: (_isHovered || hasItems) ? 0.26 : 0.14,
-                                ),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
+            child: ClipPath(
+              clipper: ShapeBorderClipper(shape: cardShape),
+              child: Stack(
+                children: [
+                  // Кольоровий індикатор категорії зліва (замість важкого градієнта)
+                  Positioned(
+                    left: 0,
+                    top: isCyberpunk ? 12 : 14,
+                    bottom: isCyberpunk ? 12 : 14,
+                    child: Container(
+                      width: 3.5,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(
+                          alpha: hasItems ? 0.95 : 0.65,
+                        ),
+                        borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(3),
                         ),
                       ),
-                      if (_isHovered || _isPressed)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: DecoratedBox(
+                    ),
+                  ),
+
+                  // Помірний shimmer-відблиск ТІЛЬКИ для товарів, доданих до кошика
+                  if (hasItems)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _shimmerCtrl,
+                          builder: (context, _) {
+                            final t = _shimmerCtrl.value;
+                            if (t > 0.45) return const SizedBox.shrink();
+                            final progress = t / 0.45;
+                            final slide = -1.6 + progress * 3.2;
+                            return DecoratedBox(
                               decoration: BoxDecoration(
-                                gradient: RadialGradient(
-                                  center: spotAlignment,
-                                  radius: 0.95,
+                                gradient: LinearGradient(
+                                  begin: Alignment(slide - 0.55, -1.0),
+                                  end: Alignment(slide + 0.55, 1.0),
                                   colors: [
+                                    Colors.transparent,
                                     (isNeon
                                             ? OsnovaTheme.neonGlow
                                             : OsnovaTheme.goldBright)
-                                        .withValues(
-                                      alpha: _isPressed ? 0.24 : 0.15,
-                                    ),
+                                        .withValues(alpha: 0.13),
                                     Colors.transparent,
                                   ],
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: AnimatedBuilder(
-                            animation: _ambientCtrl,
-                            builder: (context, _) {
-                              final t = _ambientCtrl.value;
-                              if (t > 0.14) return const SizedBox.shrink();
-                              final progress = t / 0.14;
-                              final slide = -1.6 + progress * 3.2;
-                              return DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment(slide - 0.6, -1.0),
-                                    end: Alignment(slide + 0.6, 1.0),
-                                    colors: [
-                                      Colors.transparent,
-                                      OsnovaTheme.goldBright
-                                          .withValues(alpha: 0.10),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                            );
+                          },
                         ),
                       ),
-                      OsnovaMenuFrame(
-                        borderColor: frameColor,
-                        cornerSize: 8.5,
-                        padding: const EdgeInsets.all(13),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+
+                  OsnovaMenuFrame(
+                    borderColor: frameColor,
+                    cornerSize: isCyberpunk ? 9.5 : 8.5,
+                    padding: const EdgeInsets.fromLTRB(13, 12, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                AnimatedBuilder(
-                                  animation: _ambientCtrl,
-                                  builder: (context, _) {
-                                    final t = _ambientCtrl.value;
-                                    final pulse = t < 0.08
-                                        ? math.sin((t / 0.08) * math.pi)
-                                        : 0.0;
-                                    final activeBoost =
-                                        (_isHovered || hasItems) ? 1.0 : pulse;
-
-                                    return Transform.translate(
-                                      offset: Offset(0, -1.8 * activeBoost),
-                                      child: Transform.rotate(
-                                        angle: 0.07 * activeBoost,
-                                        child: Transform.scale(
-                                          scale: 1.0 + 0.08 * activeBoost,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8.5),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  OsnovaTheme.gold.withValues(
-                                                    alpha: 0.26 +
-                                                        0.14 * activeBoost,
-                                                  ),
-                                                  OsnovaTheme.bgDeep
-                                                      .withValues(alpha: 0.88),
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
-                                              border: Border.all(
-                                                color: OsnovaTheme.goldBright
-                                                    .withValues(
-                                                  alpha: 0.34 +
-                                                      0.32 * activeBoost,
-                                                ),
-                                                width: 1.1,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: auraColor.withValues(
-                                                    alpha: (isNeon
-                                                            ? 0.25
-                                                            : 0.16) *
-                                                        activeBoost,
-                                                  ),
-                                                  blurRadius: 10,
-                                                ),
-                                              ],
-                                            ),
-                                            child: Icon(
-                                              iconData,
-                                              size: 19,
-                                              color: Color.lerp(
-                                                OsnovaTheme.gold,
-                                                OsnovaTheme.goldBright,
-                                                activeBoost,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, anim) =>
-                                      ScaleTransition(
-                                    scale: CurvedAnimation(
-                                      parent: anim,
-                                      curve: Curves.easeOutBack,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: ShapeDecoration(
+                                shape: OsnovaTheme.adaptiveShape(
+                                  radius: 10,
+                                  bevel: 6,
+                                  side: BorderSide(
+                                    color: categoryColor.withValues(
+                                      alpha: hasItems ? 0.65 : 0.32,
                                     ),
-                                    child: child,
+                                    width: 1.0,
                                   ),
-                                  child: hasItems
-                                      ? Container(
-                                          key: ValueKey('qty_${widget.cartQty}'),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            gradient: OsnovaTheme.goldGradient,
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: OsnovaTheme.gold
-                                                    .withValues(alpha: 0.45),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Text(
-                                            '×${widget.cartQty}',
-                                            style: TextStyle(
-                                              color: OsnovaTheme.bgDark,
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 13,
-                                              letterSpacing: 0.3,
-                                            ),
-                                          ),
-                                        )
-                                      : Container(
-                                          key: const ValueKey('cat_pill'),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8.5,
-                                            vertical: 3.5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: OsnovaTheme.bgDeep
-                                                .withValues(alpha: 0.72),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: OsnovaTheme.gold
-                                                  .withValues(alpha: 0.16),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            widget.product.category,
-                                            style: TextStyle(
-                                              color: OsnovaTheme.sageMuted
-                                                  .withValues(alpha: 0.9),
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              widget.product.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: (_isHovered || hasItems)
-                                    ? Colors.white
-                                    : OsnovaTheme.creamText,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                height: 1.2,
-                                letterSpacing: 0.15,
+                                color: OsnovaTheme.bgDeep.withValues(alpha: 0.85),
+                              ),
+                              child: Icon(
+                                iconData,
+                                size: 18,
+                                color: hasItems
+                                    ? OsnovaTheme.goldBright
+                                    : categoryColor,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                            if (hasItems)
+                              // Бейдж кількості + швидка кнопка «−1»
+                              Container(
+                                decoration: ShapeDecoration(
+                                  shape: OsnovaTheme.adaptiveShape(
+                                    radius: 18,
+                                    bevel: 6,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: OsnovaTheme.gold.withValues(
-                                      alpha: (_isHovered || hasItems)
-                                          ? 0.18
-                                          : 0.10,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: OsnovaTheme.gold.withValues(
-                                        alpha: (_isHovered || hasItems)
-                                            ? 0.45
-                                            : 0.22,
+                                  gradient: OsnovaTheme.goldGradient,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        widget.onDecrement();
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          8,
+                                          4,
+                                          5,
+                                          4,
+                                        ),
+                                        child: Icon(
+                                          Icons.remove_rounded,
+                                          size: 14,
+                                          color: OsnovaTheme.bgDark,
+                                        ),
                                       ),
                                     ),
+                                    Container(
+                                      width: 1,
+                                      height: 12,
+                                      color: OsnovaTheme.bgDark
+                                          .withValues(alpha: 0.25),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        6,
+                                        3.5,
+                                        9,
+                                        3.5,
+                                      ),
+                                      child: Text(
+                                        '×${widget.cartQty}',
+                                        style: TextStyle(
+                                          color: OsnovaTheme.bgDark,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12.5,
+                                          fontFeatures:
+                                              OsnovaTheme.tabularFigures,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
+                                ),
+                                decoration: ShapeDecoration(
+                                  shape: OsnovaTheme.adaptiveShape(
+                                    radius: 8,
+                                    bevel: 5,
+                                    side: BorderSide(
+                                      color:
+                                          categoryColor.withValues(alpha: 0.28),
+                                    ),
                                   ),
-                                  child: Text(
-                                    priceText,
-                                    style: TextStyle(
-                                      color: OsnovaTheme.goldBright,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 15.5,
-                                      letterSpacing: 0.2,
+                                  color:
+                                      OsnovaTheme.bgDeep.withValues(alpha: 0.72),
+                                ),
+                                child: Text(
+                                  widget.product.category,
+                                  style: TextStyle(
+                                    color: OsnovaTheme.sageMuted
+                                        .withValues(alpha: 0.92),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: hasItems
+                                ? Colors.white
+                                : OsnovaTheme.creamText,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                            height: 1.2,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: ShapeDecoration(
+                                shape: OsnovaTheme.adaptiveShape(
+                                  radius: 8,
+                                  bevel: 5,
+                                  side: BorderSide(
+                                    color: OsnovaTheme.gold.withValues(
+                                      alpha: hasItems ? 0.45 : 0.22,
                                     ),
                                   ),
                                 ),
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  width: 29,
-                                  height: 29,
-                                  decoration: BoxDecoration(
-                                    gradient: (_isHovered || hasItems)
-                                        ? OsnovaTheme.goldGradient
-                                        : null,
-                                    color: (_isHovered || hasItems)
-                                        ? null
-                                        : OsnovaTheme.bgDeep
-                                            .withValues(alpha: 0.8),
-                                    borderRadius: BorderRadius.circular(9),
-                                    border: Border.all(
-                                      color: (_isHovered || hasItems)
-                                          ? OsnovaTheme.goldBright
-                                          : OsnovaTheme.gold
-                                              .withValues(alpha: 0.36),
-                                    ),
-                                    boxShadow: (_isHovered || hasItems)
-                                        ? [
-                                            BoxShadow(
-                                              color: OsnovaTheme.gold
-                                                  .withValues(alpha: 0.42),
-                                              blurRadius: 8,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Icon(
-                                    Icons.add_rounded,
-                                    size: 17,
-                                    color: (_isHovered || hasItems)
-                                        ? OsnovaTheme.bgDark
-                                        : OsnovaTheme.goldBright,
+                                color: OsnovaTheme.gold.withValues(
+                                  alpha: hasItems ? 0.18 : 0.10,
+                                ),
+                              ),
+                              child: Text(
+                                priceText,
+                                style: TextStyle(
+                                  color: OsnovaTheme.goldBright,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                  letterSpacing: 0.2,
+                                  fontFeatures: OsnovaTheme.tabularFigures,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: ShapeDecoration(
+                                shape: OsnovaTheme.adaptiveShape(
+                                  radius: 8,
+                                  bevel: 5,
+                                  side: BorderSide(
+                                    color: hasItems
+                                        ? OsnovaTheme.goldBright
+                                        : OsnovaTheme.gold
+                                            .withValues(alpha: 0.36),
                                   ),
                                 ),
-                              ],
+                                gradient:
+                                    hasItems ? OsnovaTheme.goldGradient : null,
+                                color: hasItems
+                                    ? null
+                                    : OsnovaTheme.bgDeep.withValues(alpha: 0.8),
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                size: 17,
+                                color: hasItems
+                                    ? OsnovaTheme.bgDark
+                                    : OsnovaTheme.goldBright,
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum OsnovaThemeId {
   emeraldGold,
   cyberNeon,
+  cyberpunkNightCity,
+  cyberpunkEdgerunner,
   velvetMafia,
   midnightAmethyst,
+  navi,
+  gta6,
+  spongebob,
 }
 
 class OsnovaPalette {
@@ -15,6 +21,7 @@ class OsnovaPalette {
   final String subtitle;
   final IconData icon;
   final bool isNeon;
+  final bool isCyberpunk;
   final Color bgDark;
   final Color bgDeep;
   final Color surfaceCard;
@@ -35,6 +42,7 @@ class OsnovaPalette {
     required this.subtitle,
     required this.icon,
     required this.isNeon,
+    this.isCyberpunk = false,
     required this.bgDark,
     required this.bgDeep,
     required this.surfaceCard,
@@ -53,6 +61,10 @@ class OsnovaPalette {
 
 class OsnovaTheme {
   static const String _prefsKey = 'osnova_selected_theme_id';
+
+  static const List<FontFeature> tabularFigures = [
+    FontFeature.tabularFigures(),
+  ];
 
   static final ValueNotifier<OsnovaThemeId> themeNotifier =
       ValueNotifier<OsnovaThemeId>(OsnovaThemeId.emeraldGold);
@@ -122,6 +134,72 @@ class OsnovaTheme {
         Color(0xFF061711),
       ],
     ),
+    OsnovaThemeId.cyberpunkNightCity: OsnovaPalette(
+      id: OsnovaThemeId.cyberpunkNightCity,
+      title: 'Cyberpunk: Night City',
+      subtitle: 'Неоновий ціан та маджента 2077',
+      icon: Icons.memory_rounded,
+      isNeon: true,
+      isCyberpunk: true,
+      bgDark: Color(0xFF070A14),
+      bgDeep: Color(0xFF04060D),
+      surfaceCard: Color(0xFF0D1326),
+      surfaceElevated: Color(0xFF151E3B),
+      gold: Color(0xFF00E5FF),
+      goldBright: Color(0xFF80F5FF),
+      creamText: Color(0xFFEAF7FF),
+      sageMuted: Color(0xFF7D92C9),
+      liveGreen: Color(0xFF00FFA3),
+      neonGlow: Color(0xFFFF2A85),
+      primaryGradientColors: [
+        Color(0xFF80F5FF),
+        Color(0xFF00E5FF),
+        Color(0xFFFF2A85),
+      ],
+      cardGradientColors: [
+        Color(0xFF101830),
+        Color(0xFF0A1022),
+        Color(0xFF070B18),
+      ],
+      cardActiveGradientColors: [
+        Color(0xFF1B274D),
+        Color(0xFF141C38),
+        Color(0xFF0D1328),
+      ],
+    ),
+    OsnovaThemeId.cyberpunkEdgerunner: OsnovaPalette(
+      id: OsnovaThemeId.cyberpunkEdgerunner,
+      title: 'Cyberpunk: Edgerunner',
+      subtitle: 'Кібер-жовтий та біо-блакитний',
+      icon: Icons.electric_bolt_rounded,
+      isNeon: true,
+      isCyberpunk: true,
+      bgDark: Color(0xFF0B0B10),
+      bgDeep: Color(0xFF060609),
+      surfaceCard: Color(0xFF14141D),
+      surfaceElevated: Color(0xFF1F1F2E),
+      gold: Color(0xFFFCEE09),
+      goldBright: Color(0xFFFFF86B),
+      creamText: Color(0xFFF5F5FA),
+      sageMuted: Color(0xFF8F95AD),
+      liveGreen: Color(0xFF00F0FF),
+      neonGlow: Color(0xFFFCEE09),
+      primaryGradientColors: [
+        Color(0xFFFFF86B),
+        Color(0xFFFCEE09),
+        Color(0xFFEAB308),
+      ],
+      cardGradientColors: [
+        Color(0xFF191924),
+        Color(0xFF111119),
+        Color(0xFF0B0B11),
+      ],
+      cardActiveGradientColors: [
+        Color(0xFF2B291B),
+        Color(0xFF1C1B16),
+        Color(0xFF121218),
+      ],
+    ),
     OsnovaThemeId.velvetMafia: OsnovaPalette(
       id: OsnovaThemeId.velvetMafia,
       title: 'Вечірня Мафія',
@@ -186,12 +264,145 @@ class OsnovaTheme {
         Color(0xFF121029),
       ],
     ),
+    OsnovaThemeId.navi: OsnovaPalette(
+      id: OsnovaThemeId.navi,
+      title: 'Natus Vincere',
+      subtitle: 'Born to Win • Чорно-жовтий кіберспорт',
+      icon: Icons.emoji_events_rounded,
+      isNeon: true,
+      isCyberpunk: true,
+      bgDark: Color(0xFF0A0A0C),
+      bgDeep: Color(0xFF050507),
+      surfaceCard: Color(0xFF141418),
+      surfaceElevated: Color(0xFF1F2026),
+      gold: Color(0xFFFACC15),
+      goldBright: Color(0xFFFFEE00),
+      creamText: Color(0xFFFAFAFA),
+      sageMuted: Color(0xFF9CA3AF),
+      liveGreen: Color(0xFF22C55E),
+      neonGlow: Color(0xFFFFEE00),
+      primaryGradientColors: [
+        Color(0xFFFFF566),
+        Color(0xFFFFEE00),
+        Color(0xFFEAB308),
+      ],
+      cardGradientColors: [
+        Color(0xFF1A1A20),
+        Color(0xFF111115),
+        Color(0xFF0B0B0E),
+      ],
+      cardActiveGradientColors: [
+        Color(0xFF2E2B14),
+        Color(0xFF1F1D10),
+        Color(0xFF14130C),
+      ],
+    ),
+    OsnovaThemeId.gta6: OsnovaPalette(
+      id: OsnovaThemeId.gta6,
+      title: 'GTA VI: Vice City',
+      subtitle: 'Leonida Sunset • Неон та захід сонця',
+      icon: Icons.wb_twilight_rounded,
+      isNeon: true,
+      bgDark: Color(0xFF110A1D),
+      bgDeep: Color(0xFF080410),
+      surfaceCard: Color(0xFF1C122E),
+      surfaceElevated: Color(0xFF291A42),
+      gold: Color(0xFFFF2E93),
+      goldBright: Color(0xFFFF7AD9),
+      creamText: Color(0xFFFFF5FA),
+      sageMuted: Color(0xFFB79FD4),
+      liveGreen: Color(0xFF00F5A0),
+      neonGlow: Color(0xFF00F0FF),
+      primaryGradientColors: [
+        Color(0xFFFF7AD9),
+        Color(0xFFFF2E93),
+        Color(0xFFFF6B3D),
+      ],
+      cardGradientColors: [
+        Color(0xFF231638),
+        Color(0xFF160E24),
+        Color(0xFF0F0919),
+      ],
+      cardActiveGradientColors: [
+        Color(0xFF3B1D4A),
+        Color(0xFF261333),
+        Color(0xFF190C22),
+      ],
+    ),
+    OsnovaThemeId.spongebob: OsnovaPalette(
+      id: OsnovaThemeId.spongebob,
+      title: 'SpongeBob',
+      subtitle: 'Bikini Bottom • Океан і жовтий настрій',
+      icon: Icons.waves_rounded,
+      isNeon: false,
+      bgDark: Color(0xFF092336),
+      bgDeep: Color(0xFF051521),
+      surfaceCard: Color(0xFF0F324A),
+      surfaceElevated: Color(0xFF164463),
+      gold: Color(0xFFFACC15),
+      goldBright: Color(0xFFFFF04D),
+      creamText: Color(0xFFF0F9FF),
+      sageMuted: Color(0xFF7DD3FC),
+      liveGreen: Color(0xFF4ADE80),
+      neonGlow: Color(0xFF38BDF8),
+      primaryGradientColors: [
+        Color(0xFFFFF57A),
+        Color(0xFFFFE600),
+        Color(0xFFEAB308),
+      ],
+      cardGradientColors: [
+        Color(0xFF133B57),
+        Color(0xFF0C283B),
+        Color(0xFF081B29),
+      ],
+      cardActiveGradientColors: [
+        Color(0xFF1B5278),
+        Color(0xFF11364F),
+        Color(0xFF0B2436),
+      ],
+    ),
   };
 
   static OsnovaThemeId get currentTheme => themeNotifier.value;
 
   static OsnovaPalette get current =>
       palettes[themeNotifier.value] ?? palettes[OsnovaThemeId.emeraldGold]!;
+
+  /// Повертає скошені під 45° кути для Cyberpunk-тем або округлі для класики.
+  static OutlinedBorder adaptiveShape({
+    required double radius,
+    required double bevel,
+    BorderSide side = BorderSide.none,
+  }) {
+    if (isCyberpunk) {
+      return BeveledRectangleBorder(
+        borderRadius: BorderRadius.circular(bevel),
+        side: side,
+      );
+    }
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radius),
+      side: side,
+    );
+  }
+
+  /// Повертає стандартний режим системних панелей Android, щоб інтерфейс
+  /// не провалювався під навігаційну панель планшета.
+  static Future<void> applySystemUiStyle() async {
+    await SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: bgDeep,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+  }
 
   static Future<void> loadSavedTheme() async {
     final prefs = await SharedPreferences.getInstance();
@@ -208,12 +419,14 @@ class OsnovaTheme {
   static Future<void> setTheme(OsnovaThemeId id) async {
     if (themeNotifier.value == id) return;
     themeNotifier.value = id;
+    await applySystemUiStyle();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, id.name);
   }
 
-  // Динамічні геттери палітри — весь додаток автоматично підлаштовується під тему
+  // Динамічні геттери палітри
   static bool get isNeon => current.isNeon;
+  static bool get isCyberpunk => current.isCyberpunk;
   static Color get bgDark => current.bgDark;
   static Color get bgDeep => current.bgDeep;
   static Color get surfaceCard => current.surfaceCard;
@@ -246,27 +459,38 @@ class OsnovaTheme {
   static ThemeData buildTheme([OsnovaThemeId? themeId]) {
     final p = themeId != null ? palettes[themeId]! : current;
     final baseDark = ThemeData.dark(useMaterial3: true);
-    final manropeTheme = GoogleFonts.manropeTextTheme(baseDark.textTheme).apply(
+
+    final useCyberFont = p.isCyberpunk;
+
+    final rawTextTheme = useCyberFont
+        ? GoogleFonts.tekturTextTheme(baseDark.textTheme)
+        : GoogleFonts.juraTextTheme(baseDark.textTheme);
+
+    final coloredTextTheme = rawTextTheme.apply(
       bodyColor: p.creamText,
       displayColor: p.creamText,
     );
 
+    final primaryFontFamily = useCyberFont
+        ? GoogleFonts.tektur().fontFamily
+        : GoogleFonts.jura().fontFamily;
+
+    final displayStyle = useCyberFont
+        ? GoogleFonts.tektur(fontWeight: FontWeight.w700, color: p.creamText)
+        : GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: p.creamText);
+
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: p.bgDark,
-      textTheme: manropeTheme.copyWith(
-        titleLarge: GoogleFonts.montserrat(
-          textStyle: manropeTheme.titleLarge,
-          fontWeight: FontWeight.w700,
-          color: p.creamText,
-        ),
-        titleMedium: GoogleFonts.montserrat(
-          textStyle: manropeTheme.titleMedium,
+      fontFamily: primaryFontFamily,
+      textTheme: coloredTextTheme.copyWith(
+        titleLarge: displayStyle.copyWith(fontSize: 20),
+        titleMedium: displayStyle.copyWith(
+          fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: p.creamText,
         ),
-        labelLarge: GoogleFonts.montserrat(
-          textStyle: manropeTheme.labelLarge,
+        labelLarge: displayStyle.copyWith(
+          fontSize: 14,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -283,16 +507,16 @@ class OsnovaTheme {
         backgroundColor: p.bgDark,
         foregroundColor: p.creamText,
         elevation: 0,
-        titleTextStyle: GoogleFonts.montserrat(
+        titleTextStyle: displayStyle.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: p.creamText,
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: p.surfaceCard,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+        shape: adaptiveShape(
+          radius: 18,
+          bevel: 14,
           side: BorderSide(
             color: (p.isNeon ? p.neonGlow : p.gold).withValues(alpha: 0.48),
             width: p.isNeon ? 1.4 : 1.0,

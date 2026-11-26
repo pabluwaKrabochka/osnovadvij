@@ -23,27 +23,40 @@ class OsnovaBrandLogo extends StatelessWidget {
     final hasPrinter = printerIp != null && printerIp!.isNotEmpty;
     final isNeon = OsnovaTheme.isNeon;
 
+    final logoShape = OsnovaTheme.adaptiveShape(
+      radius: 10,
+      bevel: 7,
+      side: BorderSide(
+        color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
+            .withValues(alpha: isNeon ? 0.85 : 0.65),
+        width: isNeon ? 1.4 : 1.2,
+      ),
+    );
+
+    final badgeShape = OsnovaTheme.adaptiveShape(
+      radius: 20,
+      bevel: 7,
+      side: BorderSide(
+        color: OsnovaTheme.gold.withValues(alpha: 0.45),
+      ),
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         InkWell(
           onTap: onLogoTap,
-          borderRadius: BorderRadius.circular(10),
+          customBorder: logoShape,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
+              shape: logoShape,
               color: OsnovaTheme.bgDeep,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: (isNeon ? OsnovaTheme.neonGlow : OsnovaTheme.gold)
-                    .withValues(alpha: isNeon ? 0.85 : 0.65),
-                width: isNeon ? 1.4 : 1.2,
-              ),
-              boxShadow: isNeon
+              shadows: isNeon
                   ? [
                       BoxShadow(
-                        color: OsnovaTheme.neonGlow.withValues(alpha: 0.35),
-                        blurRadius: 10,
+                        color: OsnovaTheme.neonGlow.withValues(alpha: 0.30),
+                        blurRadius: 8,
                       ),
                     ]
                   : null,
@@ -63,15 +76,12 @@ class OsnovaBrandLogo extends StatelessWidget {
         Flexible(
           child: InkWell(
             onTap: onEditCashTap,
-            borderRadius: BorderRadius.circular(20),
+            customBorder: badgeShape,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
+                shape: badgeShape,
                 color: OsnovaTheme.surfaceCard.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: OsnovaTheme.gold.withValues(alpha: 0.45),
-                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -91,6 +101,7 @@ class OsnovaBrandLogo extends StatelessWidget {
                         color: OsnovaTheme.goldBright,
                         fontWeight: FontWeight.w700,
                         fontSize: 12.5,
+                        fontFeatures: OsnovaTheme.tabularFigures,
                       ),
                     ),
                   ),
@@ -109,17 +120,20 @@ class OsnovaBrandLogo extends StatelessWidget {
         Flexible(
           child: InkWell(
             onTap: onPrinterTap,
-            borderRadius: BorderRadius.circular(20),
+            customBorder: badgeShape,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: OsnovaTheme.surfaceCard.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: hasPrinter
-                      ? OsnovaTheme.liveGreen.withValues(alpha: 0.5)
-                      : OsnovaTheme.sageMuted.withValues(alpha: 0.25),
+              decoration: ShapeDecoration(
+                shape: OsnovaTheme.adaptiveShape(
+                  radius: 20,
+                  bevel: 7,
+                  side: BorderSide(
+                    color: hasPrinter
+                        ? OsnovaTheme.liveGreen.withValues(alpha: 0.5)
+                        : OsnovaTheme.sageMuted.withValues(alpha: 0.25),
+                  ),
                 ),
+                color: OsnovaTheme.surfaceCard.withValues(alpha: 0.72),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -145,6 +159,7 @@ class OsnovaBrandLogo extends StatelessWidget {
                             : OsnovaTheme.sageMuted,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
+                        fontFeatures: OsnovaTheme.tabularFigures,
                       ),
                     ),
                   ),

@@ -10,6 +10,7 @@ import 'features/pos/presentation/pages/splash_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await OsnovaTheme.loadSavedTheme();
+  await OsnovaTheme.applySystemUiStyle();
 
   final posController = PosController(
     repository: PosRepositoryImpl(PosLocalDataSource.instance),

@@ -188,7 +188,7 @@ class _BotanicalLeavesPainter extends CustomPainter {
   }
 }
 
-/// Подвійна фірмова рамка зі ступінчастими кутами та неоновим світінням у нічних темах
+/// Подвійна фірмова рамка: ступінчаста для класики або зі скосом 45° для Cyberpunk
 class OsnovaMenuFrame extends StatelessWidget {
   final Widget child;
   final Color? borderColor;
@@ -210,7 +210,7 @@ class OsnovaMenuFrame extends StatelessWidget {
         color: borderColor ?? OsnovaTheme.gold.withValues(alpha: 0.34),
         cornerSize: cornerSize,
         isNeon: OsnovaTheme.isNeon,
-        neonColor: OsnovaTheme.neonGlow,
+        isCyberpunk: OsnovaTheme.isCyberpunk,
       ),
       child: Padding(
         padding: padding,
@@ -224,51 +224,60 @@ class _DoubleVintageFramePainter extends CustomPainter {
   final Color color;
   final double cornerSize;
   final bool isNeon;
-  final Color neonColor;
+  final bool isCyberpunk;
 
   _DoubleVintageFramePainter({
     required this.color,
     required this.cornerSize,
     required this.isNeon,
-    required this.neonColor,
+    required this.isCyberpunk,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= cornerSize * 3 || size.height <= cornerSize * 3) return;
 
-    final outerPath = _buildSteppedRectPath(
-      Rect.fromLTWH(1.5, 1.5, size.width - 3, size.height - 3),
-      cornerSize,
-    );
-    final innerPath = _buildSteppedRectPath(
-      Rect.fromLTWH(5.0, 5.0, size.width - 10, size.height - 10),
-      math.max(4.0, cornerSize - 2.5),
-    );
+    final outerRect = Rect.fromLTWH(2.0, 2.0, size.width - 4.0, size.height - 4.0);
+    final innerRect = Rect.fromLTWH(5.2, 5.2, size.width - 10.4, size.height - 10.4);
 
-    if (isNeon) {
-      final glowPaint = Paint()
-        ..color = neonColor.withValues(alpha: (color.a * 0.55).clamp(0.18, 0.65))
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.2
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.5);
-      canvas.drawPath(outerPath, glowPaint);
-    }
+    final outerPath = isCyberpunk
+        ? _buildChamferedRectPath(outerRect, cornerSize)
+        : _buildSteppedRectPath(outerRect, cornerSize);
+
+    final innerCorner = math.max(4.0, cornerSize - 2.2);
+    final innerPath = isCyberpunk
+        ? _buildChamferedRectPath(innerRect, innerCorner)
+        : _buildSteppedRectPath(innerRect, innerCorner);
 
     final outerPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isNeon ? 1.15 : 1.0;
+      ..strokeWidth = isNeon ? 1.15 : 0.95;
 
     final innerPaint = Paint()
-      ..color = color.withValues(alpha: (color.a * 0.65).clamp(0.0, 1.0))
+      ..color = color.withValues(alpha: (color.a * 0.55).clamp(0.0, 1.0))
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.85;
+      ..strokeWidth = 0.8;
 
     canvas.drawPath(outerPath, outerPaint);
     canvas.drawPath(innerPath, innerPaint);
   }
 
+  /// Скошені 45° кути для стилю Cyberpunk
+  Path _buildChamferedRectPath(Rect r, double c) {
+    return Path()
+      ..moveTo(r.left + c, r.top)
+      ..lineTo(r.right - c, r.top)
+      ..lineTo(r.right, r.top + c)
+      ..lineTo(r.right, r.bottom - c)
+      ..lineTo(r.right - c, r.bottom)
+      ..lineTo(r.left + c, r.bottom)
+      ..lineTo(r.left, r.bottom - c)
+      ..lineTo(r.left, r.top + c)
+      ..close();
+  }
+
+  /// Класичні ступінчасті кути клубного меню
   Path _buildSteppedRectPath(Rect r, double c) {
     return Path()
       ..moveTo(r.left + c, r.top)
@@ -291,7 +300,7 @@ class _DoubleVintageFramePainter extends CustomPainter {
     return oldDelegate.color != color ||
         oldDelegate.cornerSize != cornerSize ||
         oldDelegate.isNeon != isNeon ||
-        oldDelegate.neonColor != neonColor;
+        oldDelegate.isCyberpunk != isCyberpunk;
   }
 }
 
