@@ -36,6 +36,7 @@ class ReceiptPrintData {
   final String? grandTotalLabel;
   final String? grandTotalValue;
   final String? paymentMethodText;
+  final String? fortuneTitle;
   final String? fortuneText;
   final String? footerNote;
   final bool showSocials;
@@ -50,6 +51,7 @@ class ReceiptPrintData {
     this.grandTotalLabel,
     this.grandTotalValue,
     this.paymentMethodText,
+    this.fortuneTitle,
     this.fortuneText,
     this.footerNote,
     this.showSocials = true,
@@ -69,8 +71,6 @@ class ReceiptPaperContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 288 логічних px * pixelRatio 2.0 = 576 px (повна ширина 80 мм Xprinter)
-    // 192 логічних px * pixelRatio 2.0 = 384 px (повна ширина 58 мм Xprinter)
     final double logicalWidth = is80mm ? 288.0 : 192.0;
     final double scale = is80mm ? 1.0 : 0.72;
 
@@ -372,7 +372,7 @@ class ReceiptPaperContent extends StatelessWidget {
               SizedBox(height: 4.5 * scale),
             ],
 
-            // 6. Щасливе передбачення (якщо увімкнено)
+            // 6. Щасливе побажання / передбачення
             if (data.fortuneText != null &&
                 data.fortuneText!.trim().isNotEmpty) ...[
               Container(
@@ -388,7 +388,7 @@ class ReceiptPaperContent extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      '★ ЩАСЛИВЕ ПЕРЕДБАЧЕННЯ ★',
+                      data.fortuneTitle ?? '★ ЩАСЛИВЕ ПОБАЖАННЯ ★',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 7.4 * scale,
@@ -398,8 +398,11 @@ class ReceiptPaperContent extends StatelessWidget {
                     ),
                     SizedBox(height: 2 * scale),
                     Text(
-                      data.fortuneText!,
+                      data.fortuneText!.trim(),
                       textAlign: TextAlign.center,
+                      softWrap: true,
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 8.3 * scale,
                         fontStyle: FontStyle.italic,

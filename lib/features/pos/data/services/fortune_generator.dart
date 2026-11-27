@@ -2,6 +2,7 @@ import 'dart:math';
 
 class FortuneGenerator {
   static final Random _random = Random();
+  static String? _lastFortune;
 
   static const List<String> _builtInFortunes = [
     'Ця чашка кави заряджена на вдалий день та приємні несподіванки!',
@@ -54,21 +55,33 @@ class FortuneGenerator {
     '— бережи цей настрій.',
   ];
 
-  /// Генерує випадкове передбачення (з урахуванням власних фраз закладу)
+  /// Генерує випадкове передбачення без повтору попереднього підряд
   static String generate({List<String> customFortunes = const []}) {
-    final allPool = <String>[
+    final allPool = <String>{
       ..._builtInFortunes,
-      ...customFortunes.where((e) => e.trim().isNotEmpty),
-    ];
+      ...customFortunes.map((e) => e.trim()).where((e) => e.isNotEmpty),
+    }.toList();
 
     // З імовірністю 30% створюємо унікальну комбіновану фразу з конструктора
     if (customFortunes.isEmpty && _random.nextInt(10) < 3) {
-      final opener = _openers[_random.nextInt(_openers.length)];
-      final event = _events[_random.nextInt(_events.length)];
-      final closer = _closers[_random.nextInt(_closers.length)];
-      return '$opener $event $closer';
+      for (int attempt = 0; attempt < 8; attempt++) {
+        final opener = _openers[_random.nextInt(_openers.length)];
+        final event = _events[_random.nextInt(_events.length)];
+        final closer = _closers[_random.nextInt(_closers.length)];
+        final combined = '$opener $event $closer';
+        if (combined != _lastFortune) {
+          _lastFortune = combined;
+          return combined;
+        }
+      }
     }
 
-    return allPool[_random.nextInt(allPool.length)];
+    final candidates = allPool.length > 1
+        ? allPool.where((f) => f != _lastFortune).toList()
+        : allPool;
+
+    final chosen = candidates[_random.nextInt(candidates.length)];
+    _lastFortune = chosen;
+    return chosen;
   }
 }

@@ -77,7 +77,7 @@ class _PosPageState extends State<PosPage> {
     }
   }
 
-Future<void> _openAbcAnalytics() async {
+  Future<void> _openAbcAnalytics() async {
     final now = DateTime.now();
     final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
     final start = DateTime(now.year, now.month, now.day)
@@ -92,6 +92,7 @@ Future<void> _openAbcAnalytics() async {
           widget.controller.loadAbcAnalyticsRange(from, to),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = widget.controller;
@@ -502,7 +503,7 @@ Future<void> _openAbcAnalytics() async {
                                                     const EdgeInsets.fromLTRB(
                                                   12,
                                                   9,
-                                                  12,
+                                                  8,
                                                   7,
                                                 ),
                                                 itemCount:
@@ -612,7 +613,7 @@ Future<void> _openAbcAnalytics() async {
                                                       if (dragged != cat) {
                                                         HapticFeedback
                                                             .selectionClick();
-                                                        ctrl.reorderCategories(
+                                                        ctrl.swapCategories(
                                                           dragged,
                                                           cat,
                                                         );
@@ -685,6 +686,26 @@ Future<void> _openAbcAnalytics() async {
                                                               ctrl.selectCategory(
                                                             cat,
                                                           ),
+                                                          onDoubleTap: () {
+                                                            HapticFeedback
+                                                                .selectionClick();
+                                                            PosDialogs
+                                                                .showEditCategoryDialog(
+                                                              context,
+                                                              ctrl,
+                                                              cat,
+                                                            );
+                                                          },
+                                                          onSecondaryTap: () {
+                                                            HapticFeedback
+                                                                .selectionClick();
+                                                            PosDialogs
+                                                                .showEditCategoryDialog(
+                                                              context,
+                                                              ctrl,
+                                                              cat,
+                                                            );
+                                                          },
                                                           child:
                                                               buildCategoryPill(
                                                             isHoveredTarget:
@@ -695,6 +716,54 @@ Future<void> _openAbcAnalytics() async {
                                                     },
                                                   );
                                                 },
+                                              ),
+                                            ),
+                                            // Кнопка керування категоріями (додати / перейменувати / видалити)
+                                            Tooltip(
+                                              message:
+                                                  'Категорії: додати, перейменувати або видалити',
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(11),
+                                                onTap: () {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                  PosDialogs
+                                                      .showManageCategoriesDialog(
+                                                    context,
+                                                    ctrl,
+                                                  );
+                                                },
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(
+                                                    right: 6,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.all(6.5),
+                                                  decoration: ShapeDecoration(
+                                                    shape: OsnovaTheme
+                                                        .adaptiveShape(
+                                                      radius: 11,
+                                                      bevel: 6,
+                                                      side: BorderSide(
+                                                        color: OsnovaTheme.gold
+                                                            .withValues(
+                                                          alpha: 0.42,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    color: OsnovaTheme.bgDark
+                                                        .withValues(
+                                                      alpha: 0.88,
+                                                    ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.tune_rounded,
+                                                    size: 16,
+                                                    color:
+                                                        OsnovaTheme.goldBright,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                             Container(
@@ -996,7 +1065,7 @@ class _HorizontalGoldSliderBar extends StatelessWidget {
             (pos.pixels / pos.maxScrollExtent).clamp(0.0, 1.0);
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 74, 3),
+          padding: const EdgeInsets.fromLTRB(14, 0, 116, 3),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final trackWidth = constraints.maxWidth;
@@ -1046,7 +1115,6 @@ class _PosAmbientFramePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Легкі горизонтальні scanlines у стилі Cyberpunk HUD (кешуються в RepaintBoundary)
     if (palette.isCyberpunk) {
       final scanPaint = Paint()
         ..color = palette.gold.withValues(alpha: 0.032)
@@ -1055,7 +1123,6 @@ class _PosAmbientFramePainter extends CustomPainter {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), scanPaint);
       }
 
-      // Мікро-мітка HUD у нижньому лівому куті
       final tp = TextPainter(
         text: TextSpan(
           text: 'OSNOVA.SYS // 76.3',

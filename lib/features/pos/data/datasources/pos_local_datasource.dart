@@ -203,7 +203,7 @@ class PosLocalDataSource {
         await db.insert('tg_event_categories', item);
       }
     }
-await db.execute('''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS tg_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category TEXT NOT NULL,
@@ -244,6 +244,14 @@ await db.execute('''
         'ALTER TABLE products ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
       );
       await db.execute('UPDATE products SET sort_order = id');
+    } else {
+      final nonZeroRes = await db.rawQuery(
+        'SELECT COUNT(*) AS cnt FROM products WHERE sort_order != 0',
+      );
+      final nonZeroCnt = (nonZeroRes.first['cnt'] as int?) ?? 0;
+      if (nonZeroCnt == 0) {
+        await db.execute('UPDATE products SET sort_order = id');
+      }
     }
     if (!productColNames.contains('cost_price')) {
       await db.execute(
@@ -466,7 +474,8 @@ await db.execute('''
       whereArgs: [shiftId],
     );
   }
-// ==================== КАТЕГОРІЇ ПОДІЙ ТА ПРИВ'ЯЗКА ДО ГІЛОК ТГ ====================
+
+  // ==================== КАТЕГОРІЇ ПОДІЙ ТА ПРИВ'ЯЗКА ДО ГІЛОК ТГ ====================
 
   DbRowListFuture getTgEventCategories() async {
     final db = await database;
@@ -561,7 +570,8 @@ await db.execute('''
     }
     return (serviceIn: serviceIn, serviceOut: serviceOut);
   }
-// ==================== ПОДІЇ ДЛЯ TELEGRAM (СТВОРЕННЯ / РЕДАГУВАННЯ) ====================
+
+  // ==================== ПОДІЇ ДЛЯ TELEGRAM (СТВОРЕННЯ / РЕДАГУВАННЯ) ====================
 
   DbRowListFuture getTgEvents() async {
     final db = await database;
@@ -607,7 +617,8 @@ await db.execute('''
     final db = await database;
     await db.delete('tg_events', where: 'id = ?', whereArgs: [id]);
   }
-// ==================== УЧАСНИКИ ТА ТЕГИ ДЛЯ TELEGRAM ====================
+
+  // ==================== УЧАСНИКИ ТА ТЕГИ ДЛЯ TELEGRAM ====================
 
   DbRowListFuture getTgSubscribers() async {
     final db = await database;
@@ -660,7 +671,8 @@ await db.execute('''
     final db = await database;
     await db.delete('tg_subscribers', where: 'id = ?', whereArgs: [id]);
   }
- // ==================== ABC-АНАЛІЗ ПРОДАЖІВ ====================
+
+  // ==================== ABC-АНАЛІЗ ПРОДАЖІВ ====================
 
   Future<List<ProductSalesStat>> getProductSalesStats({
     int daysBack = 30,
@@ -680,7 +692,6 @@ await db.execute('''
     final normalizedStart = DateTime(start.year, start.month, start.day);
     final normalizedEnd = DateTime(end.year, end.month, end.day);
 
-    // Якщо початкова дата ще не настала — продажів за неї бути не може
     if (normalizedStart.isAfter(todayStart)) {
       return [];
     }
@@ -723,6 +734,7 @@ await db.execute('''
       );
     }).toList();
   }
+
   // ==================== НАЛАШТУВАННЯ TELEGRAM ====================
 
   Future<({String token, String chatId})> loadTelegramSettings() async {
@@ -757,6 +769,8 @@ await db.execute('''
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
+
+  // ==================== МЕНЮ, ПОЗИЦІЇ ТА КАТЕГОРІЇ ВІТРИНИ ====================
 
   Future<List<ProductEntity>> getActiveProducts() async {
     final db = await database;
@@ -843,6 +857,29 @@ await db.execute('''
       );
     }
     await batch.commit(noResult: true);
+  }
+
+  Future<void> renameCategoryProducts({
+    required String oldCategory,
+    required String newCategory,
+  }) async {
+    final db = await database;
+    await db.update(
+      'products',
+      {'category': newCategory.trim()},
+      where: 'category = ?',
+      whereArgs: [oldCategory.trim()],
+    );
+  }
+
+  Future<void> moveCategoryProductsToDefault(String categoryName) async {
+    final db = await database;
+    await db.update(
+      'products',
+      {'category': 'Основне меню'},
+      where: 'category = ?',
+      whereArgs: [categoryName.trim()],
+    );
   }
 
   Future<int> createOrder({

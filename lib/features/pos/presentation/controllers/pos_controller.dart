@@ -48,6 +48,7 @@ class PosController extends ChangeNotifier {
             privatTerminalService ?? PrivatTerminalServiceImpl();
 
   static const _keyCategoryOrder = 'osnova_category_order';
+  static const _keyCustomCategories = 'osnova_custom_categories';
 
   final GlobalKey receiptPrintKey = GlobalKey();
   final Random _random = Random();
@@ -58,10 +59,12 @@ class PosController extends ChangeNotifier {
   ShiftEntity? currentShift;
   List<ProductEntity> products = [];
   List<String> _savedCategoryOrder = [];
+  List<String> _customCategories = [];
   String selectedCategory = 'Усі';
 
   final List<CartItemEntity> cart = [];
   String paymentMethod = 'card';
+  String customFortuneText = '';
 
   int currentCashInDrawer = 0;
   String? connectedPrinterIp;
@@ -83,6 +86,8 @@ class PosController extends ChangeNotifier {
     dateTimeText: '',
   );
 
+  List<ProductEntity> get allProducts => products;
+
   OsnovaThemeId get currentTheme => OsnovaTheme.currentTheme;
 
   Future<void> setTheme(OsnovaThemeId themeId) async {
@@ -99,7 +104,12 @@ class PosController extends ChangeNotifier {
     final existing = <String>{};
     for (final p in products) {
       if (p.category.trim().isNotEmpty && p.category != 'Усі') {
-        existing.add(p.category);
+        existing.add(p.category.trim());
+      }
+    }
+    for (final custom in _customCategories) {
+      if (custom.trim().isNotEmpty && custom != 'Усі') {
+        existing.add(custom.trim());
       }
     }
 
@@ -121,6 +131,11 @@ class PosController extends ChangeNotifier {
 
   int get cartTotal => cart.fold<int>(0, (sum, item) => sum + item.totalPrice);
 
+  void setCustomFortuneText(String value) {
+    if (customFortuneText == value) return;
+    customFortuneText = value;
+  }
+
   String _generateUniqueReceiptCode(DateTime now, int receiptNum) {
     final datePart = DateFormat('ddMMyy').format(now);
     final timePart = DateFormat('HHmm').format(now);
@@ -129,10 +144,17 @@ class PosController extends ChangeNotifier {
     return '763-$datePart-$timePart-$seqPart-$checkDigits';
   }
 
+  Future<void> _persistCategoryPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyCategoryOrder, _savedCategoryOrder);
+    await prefs.setStringList(_keyCustomCategories, _customCategories);
+  }
+
   Future<void> initPos() async {
     await OsnovaTheme.loadSavedTheme();
     final prefs = await SharedPreferences.getInstance();
     _savedCategoryOrder = prefs.getStringList(_keyCategoryOrder) ?? [];
+    _customCategories = prefs.getStringList(_keyCustomCategories) ?? [];
 
     final tgConfig = await PosLocalDataSource.instance.loadTelegramSettings();
     OsnovaTelegramService.instance.onConfigSaved = (token, chatId) async {
@@ -241,7 +263,7 @@ class PosController extends ChangeNotifier {
     return PosLocalDataSource.instance.getProductSalesStats(daysBack: daysBack);
   }
 
- Future<List<ProductSalesStat>> loadAbcAnalyticsRange(
+  Future<List<ProductSalesStat>> loadAbcAnalyticsRange(
     DateTime start,
     DateTime end,
   ) {
@@ -257,7 +279,98 @@ class PosController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderCategories(
+  Future<bool> addCategory(String name) async {
+    final clean = name.trim();
+    if (clean.isEmpty) return false;
+
+    final exists = categories.any(
+      (c) => c.toLowerCase() == clean.toLowerCase(),
+    );
+    if (exists) return false;
+
+    _customCategories.add(clean);
+    if (!_savedCategoryOrder.contains(clean)) {
+      _savedCategoryOrder.add(clean);
+    }
+    notifyListeners();
+    await _persistCategoryPrefs();
+    return true;
+  }
+
+  Future<bool> renameCategory(String oldName, String newName) async {
+    final cleanOld = oldName.trim();
+    final cleanNew = newName.trim();
+    if (cleanOld.isEmpty || cleanNew.isEmpty || cleanOld == 'Усі') {
+      return false;
+    }
+    if (cleanOld == cleanNew) return true;
+
+    final duplicate = categories.any(
+      (c) => c != cleanOld && c.toLowerCase() == cleanNew.toLowerCase(),
+    );
+    if (duplicate) return false;
+
+    await PosLocalDataSource.instance.renameCategoryProducts(
+      oldCategory: cleanOld,
+      newCategory: cleanNew,
+    );
+    products = await _repository.getActiveProducts();
+
+    _customCategories = _customCategories
+        .map((c) => c == cleanOld ? cleanNew : c)
+        .toSet()
+        .toList();
+    if (!_customCategories.contains(cleanNew)) {
+      _customCategories.add(cleanNew);
+    }
+
+    _savedCategoryOrder = _savedCategoryOrder
+        .map((c) => c == cleanOld ? cleanNew : c)
+        .toSet()
+        .toList();
+    if (!_savedCategoryOrder.contains(cleanNew)) {
+      _savedCategoryOrder.add(cleanNew);
+    }
+
+    if (selectedCategory == cleanOld) {
+      selectedCategory = cleanNew;
+    }
+
+    notifyListeners();
+    await _persistCategoryPrefs();
+    return true;
+  }
+
+  Future<void> deleteCategory(String categoryName) async {
+    final clean = categoryName.trim();
+    if (clean.isEmpty || clean == 'Усі' || clean == 'Основне меню') return;
+
+    await PosLocalDataSource.instance.moveCategoryProductsToDefault(clean);
+    products = await _repository.getActiveProducts();
+
+    _customCategories.removeWhere((c) => c == clean);
+    _savedCategoryOrder.removeWhere((c) => c == clean);
+
+    if (selectedCategory == clean) {
+      selectedCategory = 'Усі';
+    }
+
+    notifyListeners();
+    await _persistCategoryPrefs();
+  }
+
+  Future<void> reorderCategories(List<String> newOrder) async {
+    final cleaned = newOrder
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && e != 'Усі')
+        .toSet()
+        .toList();
+    _savedCategoryOrder = cleaned;
+    notifyListeners();
+    await _persistCategoryPrefs();
+  }
+
+  Future<void> swapCategories(
     String draggedCategory,
     String targetCategory,
   ) async {
@@ -275,29 +388,29 @@ class PosController extends ChangeNotifier {
     final item = movable.removeAt(oldIndex);
     movable.insert(newIndex, item);
 
-    _savedCategoryOrder = movable;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_keyCategoryOrder, movable);
+    await reorderCategories(movable);
   }
 
-  Future<void> reorderProducts(
-    int draggedProductId,
-    int targetProductId,
-  ) async {
-    if (draggedProductId == targetProductId) return;
+  Future<void> reorderProducts(List<int> orderedIds) async {
+    if (orderedIds.isEmpty) return;
 
-    final oldIndex = products.indexWhere((p) => p.id == draggedProductId);
-    final newIndex = products.indexWhere((p) => p.id == targetProductId);
-    if (oldIndex == -1 || newIndex == -1 || oldIndex == newIndex) return;
+    final byId = <int, ProductEntity>{
+      for (final p in products) p.id: p,
+    };
 
-    final moved = products.removeAt(oldIndex);
-    products.insert(newIndex, moved);
+    final reordered = <ProductEntity>[];
+    for (final id in orderedIds) {
+      final item = byId.remove(id);
+      if (item != null) {
+        reordered.add(item);
+      }
+    }
+    // Додаємо решту позицій, якщо вони не потрапили у вибірку
+    reordered.addAll(byId.values);
 
-    for (int i = 0; i < products.length; i++) {
-      final p = products[i];
-      products[i] = ProductEntity(
+    for (int i = 0; i < reordered.length; i++) {
+      final p = reordered[i];
+      reordered[i] = ProductEntity(
         id: p.id,
         name: p.name,
         category: p.category,
@@ -308,6 +421,7 @@ class PosController extends ChangeNotifier {
       );
     }
 
+    products = reordered;
     notifyListeners();
     await _repository.updateProductsOrder(products);
   }
@@ -596,15 +710,20 @@ class PosController extends ChangeNotifier {
     final uniqueCode = _generateUniqueReceiptCode(now, nextNum);
 
     String? fortuneText;
-    final fortuneEnabled =
-        await PosLocalDataSource.instance.isFortuneEnabled();
-    if (fortuneEnabled) {
-      final customs = await PosLocalDataSource.instance.getCustomFortunes();
-      final customTexts = customs
-          .map((e) => (e['text'] ?? '').toString())
-          .where((t) => t.trim().isNotEmpty)
-          .toList();
-      fortuneText = FortuneGenerator.generate(customFortunes: customTexts);
+    final manualFortune = customFortuneText.trim();
+    if (manualFortune.isNotEmpty) {
+      fortuneText = manualFortune;
+    } else {
+      final fortuneEnabled =
+          await PosLocalDataSource.instance.isFortuneEnabled();
+      if (fortuneEnabled) {
+        final customs = await PosLocalDataSource.instance.getCustomFortunes();
+        final customTexts = customs
+            .map((e) => (e['text'] ?? '').toString())
+            .where((t) => t.trim().isNotEmpty)
+            .toList();
+        fortuneText = FortuneGenerator.generate(customFortunes: customTexts);
+      }
     }
 
     final receiptNum = await _repository.createOrder(
@@ -649,6 +768,7 @@ class PosController extends ChangeNotifier {
     );
 
     cart.clear();
+    customFortuneText = '';
     await _refreshShiftData();
     notifyListeners();
 

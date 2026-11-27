@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/osnova_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../data/services/fortune_generator.dart';
 import '../../domain/entities/pos_entities.dart';
 import '../controllers/pos_controller.dart';
 
-class CartPanel extends StatelessWidget {
+class CartPanel extends StatefulWidget {
   final PosController controller;
   final VoidCallback onCheckout;
 
@@ -16,12 +17,60 @@ class CartPanel extends StatelessWidget {
   });
 
   @override
+  State<CartPanel> createState() => _CartPanelState();
+}
+
+class _CartPanelState extends State<CartPanel> {
+  static const int maxFortuneLength = 120;
+  late final TextEditingController _fortuneCtrl;
+  late final ScrollController _cartScrollCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fortuneCtrl = TextEditingController(
+      text: widget.controller.customFortuneText,
+    );
+    _cartScrollCtrl = ScrollController();
+  }
+
+  @override
+  void didUpdateWidget(covariant CartPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final externalText = widget.controller.customFortuneText;
+    if (_fortuneCtrl.text != externalText) {
+      _fortuneCtrl.value = TextEditingValue(
+        text: externalText,
+        selection: TextSelection.collapsed(offset: externalText.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _fortuneCtrl.dispose();
+    _cartScrollCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     final isCartEmpty = controller.cart.isEmpty;
     final totalFormatted = MoneyFormatter.format(controller.cartTotal);
     final isOplata24 = controller.paymentMethod == 'oplata24';
     final isNeon = OsnovaTheme.isNeon;
     final isCyberpunk = OsnovaTheme.isCyberpunk;
+
+    // Синхронізуємо, якщо поле очистилось після пробиття чека
+    if (_fortuneCtrl.text != controller.customFortuneText) {
+      _fortuneCtrl.value = TextEditingValue(
+        text: controller.customFortuneText,
+        selection: TextSelection.collapsed(
+          offset: controller.customFortuneText.length,
+        ),
+      );
+    }
 
     final checkoutShape = OsnovaTheme.adaptiveShape(
       radius: 14,
@@ -184,24 +233,40 @@ class CartPanel extends StatelessWidget {
                       ),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    itemCount: controller.cart.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = controller.cart[index];
-                      return _CartItemTile(
-                        item: item,
-                        onDecrement: () {
-                          HapticFeedback.selectionClick();
-                          controller.decrementCartItem(index);
-                        },
-                        onIncrement: () {
-                          HapticFeedback.selectionClick();
-                          controller.addToCart(item.product);
-                        },
-                      );
-                    },
+                : RawScrollbar(
+                    controller: _cartScrollCtrl,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    interactive: true,
+                    thickness: 5.5,
+                    radius: const Radius.circular(8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 3,
+                    ),
+                    thumbColor: OsnovaTheme.gold.withValues(alpha: 0.82),
+                    trackColor: OsnovaTheme.bgDeep.withValues(alpha: 0.65),
+                    trackBorderColor: OsnovaTheme.gold.withValues(alpha: 0.25),
+                    child: ListView.separated(
+                      controller: _cartScrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(12, 10, 15, 10),
+                      itemCount: controller.cart.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = controller.cart[index];
+                        return _CartItemTile(
+                          item: item,
+                          onDecrement: () {
+                            HapticFeedback.selectionClick();
+                            controller.decrementCartItem(index);
+                          },
+                          onIncrement: () {
+                            HapticFeedback.selectionClick();
+                            controller.addToCart(item.product);
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
           Container(
@@ -276,11 +341,11 @@ class CartPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 6,
+                    vertical: 5,
                   ),
                   decoration: ShapeDecoration(
                     shape: OsnovaTheme.adaptiveShape(
@@ -346,6 +411,170 @@ class CartPanel extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
+
+                // Блок введення персонального «Щасливого побажання» на чек
+                Container(
+                  padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
+                  decoration: ShapeDecoration(
+                    shape: OsnovaTheme.adaptiveShape(
+                      radius: 12,
+                      bevel: 7,
+                      side: BorderSide(
+                        color: _fortuneCtrl.text.trim().isNotEmpty
+                            ? OsnovaTheme.goldBright.withValues(alpha: 0.55)
+                            : OsnovaTheme.gold.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    color: OsnovaTheme.bgDark.withValues(alpha: 0.62),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 14,
+                            color: OsnovaTheme.goldBright,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Щасливе побажання на чек',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: OsnovaTheme.goldBright,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${_fortuneCtrl.text.length}/$maxFortuneLength',
+                            style: TextStyle(
+                              color:
+                                  _fortuneCtrl.text.length >= maxFortuneLength
+                                      ? Colors.orangeAccent
+                                      : OsnovaTheme.sageMuted,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: OsnovaTheme.tabularFigures,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _fortuneCtrl,
+                              maxLength: maxFortuneLength,
+                              maxLines: 2,
+                              minLines: 1,
+                              onChanged: (val) {
+                                controller.setCustomFortuneText(val);
+                                setState(() {});
+                              },
+                              style: TextStyle(
+                                color: OsnovaTheme.creamText,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: InputDecoration(
+                                counterText: '',
+                                isDense: true,
+                                filled: true,
+                                fillColor: OsnovaTheme.bgDeep,
+                                hintText:
+                                    'Авто: випадкове (або впишіть своє...)',
+                                hintStyle: TextStyle(
+                                  color: OsnovaTheme.sageMuted
+                                      .withValues(alpha: 0.55),
+                                  fontSize: 11.5,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color:
+                                        OsnovaTheme.gold.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color:
+                                        OsnovaTheme.gold.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: OsnovaTheme.goldBright,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            tooltip: 'Підставити випадкове побажання',
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints(
+                              minWidth: 30,
+                              minHeight: 30,
+                            ),
+                            padding: EdgeInsets.zero,
+                            icon: Icon(
+                              Icons.casino_outlined,
+                              size: 18,
+                              color: OsnovaTheme.goldBright,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              final generated = FortuneGenerator.generate();
+                              final trimmed =
+                                  generated.length > maxFortuneLength
+                                      ? generated.substring(0, maxFortuneLength)
+                                      : generated;
+                              _fortuneCtrl.text = trimmed;
+                              controller.setCustomFortuneText(trimmed);
+                              setState(() {});
+                            },
+                          ),
+                          if (_fortuneCtrl.text.isNotEmpty)
+                            IconButton(
+                              tooltip: 'Очистити (повернути авто)',
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 30,
+                              ),
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                size: 17,
+                                color: Colors.redAccent,
+                              ),
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                _fortuneCtrl.clear();
+                                controller.setCustomFortuneText('');
+                                setState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 10),
                 DecoratedBox(
                   decoration: ShapeDecoration(
@@ -384,7 +613,7 @@ class CartPanel extends StatelessWidget {
                           ? null
                           : () {
                               HapticFeedback.mediumImpact();
-                              onCheckout();
+                              widget.onCheckout();
                             },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

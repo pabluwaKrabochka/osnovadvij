@@ -184,6 +184,342 @@ class PosDialogs {
     );
   }
 
+  /// Керування категоріями слайдера (додавання, редагування, порядок, видалення)
+  static Future<void> showManageCategoriesDialog(
+    BuildContext context,
+    PosController controller, {
+    String? initialEditCategory,
+  }) async {
+    final newCatCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => ListenableBuilder(
+        listenable: controller,
+        builder: (ctx, _) {
+          final editableCategories =
+              controller.categories.where((c) => c != 'Усі').toList();
+
+          return Dialog(
+            backgroundColor: OsnovaTheme.surfaceCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(
+                color: OsnovaTheme.gold.withValues(alpha: 0.48),
+                width: 1.2,
+              ),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 580),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _dialogHeader(
+                      icon: Icons.category_rounded,
+                      title: 'КАТЕГОРІЇ ВІТРИНИ',
+                      subtitle:
+                          'Додавайте, перейменовуйте, видаляйте та змінюйте порядок вкладок',
+                      onClose: () => Navigator.pop(ctx),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: newCatCtrl,
+                            maxLength: 24,
+                            decoration: _premiumInput(
+                              label: 'Нова категорія',
+                              hint: 'Напр. Кальяни / Снеки / Турніри',
+                              icon: Icons.add_box_outlined,
+                            ).copyWith(counterText: ''),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _goldPrimaryButton(
+                          icon: Icons.add_rounded,
+                          label: 'Додати',
+                          onPressed: () async {
+                            final name = newCatCtrl.text.trim();
+                            if (name.isEmpty) return;
+                            final ok = await controller.addCategory(name);
+                            if (!ctx.mounted) return;
+                            if (ok) {
+                              newCatCtrl.clear();
+                              OsnovaToast.success(
+                                ctx,
+                                'Категорію додано',
+                                subtitle: name,
+                              );
+                            } else {
+                              OsnovaToast.warning(
+                                ctx,
+                                'Така категорія вже існує',
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'ПОТОЧНІ КАТЕГОРІЇ (ПЕРЕТЯГУЙТЕ ДЛЯ ЗМІНИ ПОРЯДКУ):',
+                      style: TextStyle(
+                        color: OsnovaTheme.sageMuted,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.7,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        itemCount: editableCategories.length,
+                        onReorderItem: (oldIndex, newIndex) async {
+                          final updated =
+                              List<String>.from(editableCategories);
+                          final moved = updated.removeAt(oldIndex);
+                          updated.insert(newIndex, moved);
+                          await controller.reorderCategories(updated);
+                        },
+                        itemBuilder: (ctx, idx) {
+                          final cat = editableCategories[idx];
+                          final isProtected = cat == 'Основне меню';
+                          final count = controller.allProducts
+                              .where((p) => p.category == cat)
+                              .length;
+
+                          return Container(
+                            key: ValueKey('cat_$cat'),
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0A1914),
+                              borderRadius: BorderRadius.circular(13),
+                              border: Border.all(
+                                color: OsnovaTheme.gold.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                ReorderableDragStartListener(
+                                  index: idx,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: Icon(
+                                      Icons.drag_indicator_rounded,
+                                      color: OsnovaTheme.goldBright,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cat,
+                                        style: TextStyle(
+                                          color: OsnovaTheme.creamText,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        '$count поз.',
+                                        style: TextStyle(
+                                          color: OsnovaTheme.sageMuted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Перейменувати',
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    size: 18,
+                                    color: OsnovaTheme.goldBright,
+                                  ),
+                                  onPressed: () => showEditCategoryDialog(
+                                    ctx,
+                                    controller,
+                                    cat,
+                                  ),
+                                ),
+                                if (!isProtected)
+                                  IconButton(
+                                    tooltip: 'Видалити категорію',
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      size: 19,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () async {
+                                      await controller.deleteCategory(cat);
+                                      if (ctx.mounted) {
+                                        OsnovaToast.success(
+                                          ctx,
+                                          'Категорію видалено',
+                                          subtitle:
+                                              'Позиції перенесено в «Основне меню»',
+                                        );
+                                      }
+                                    },
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _goldPrimaryButton(
+                        icon: Icons.check_rounded,
+                        label: 'Готово',
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Швидке редагування / видалення конкретної категорії (по затисканню на чіп у слайдері)
+  static Future<void> showEditCategoryDialog(
+    BuildContext context,
+    PosController controller,
+    String categoryName,
+  ) async {
+    final editCtrl = TextEditingController(text: categoryName);
+    final isProtected = categoryName == 'Основне меню';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: OsnovaTheme.surfaceCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(
+            color: OsnovaTheme.gold.withValues(alpha: 0.48),
+            width: 1.2,
+          ),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _dialogHeader(
+                  icon: Icons.edit_rounded,
+                  title: 'РЕДАГУВАННЯ КАТЕГОРІЇ',
+                  subtitle: 'Зміна назви вкладки на верхньому слайдері',
+                  onClose: () => Navigator.pop(ctx),
+                  trailing: isProtected
+                      ? null
+                      : IconButton(
+                          tooltip: 'Видалити категорію',
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.redAccent,
+                          ),
+                          onPressed: () async {
+                            await controller.deleteCategory(categoryName);
+                            if (ctx.mounted) {
+                              OsnovaToast.success(
+                                ctx,
+                                'Категорію видалено',
+                                subtitle:
+                                    'Позиції перенесено в «Основне меню»',
+                              );
+                              Navigator.pop(ctx);
+                            }
+                          },
+                        ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: editCtrl,
+                  autofocus: true,
+                  maxLength: 24,
+                  style: TextStyle(
+                    color: OsnovaTheme.creamText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: _premiumInput(
+                    label: 'Назва категорії',
+                    icon: Icons.label_outline_rounded,
+                  ).copyWith(counterText: ''),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Скасувати',
+                        style: TextStyle(color: OsnovaTheme.sageMuted),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _goldPrimaryButton(
+                      icon: Icons.save_rounded,
+                      label: 'Зберегти',
+                      onPressed: () async {
+                        final newName = editCtrl.text.trim();
+                        if (newName.isEmpty) return;
+                        final ok = await controller.renameCategory(
+                          categoryName,
+                          newName,
+                        );
+                        if (!ctx.mounted) return;
+                        if (ok) {
+                          OsnovaToast.success(
+                            ctx,
+                            'Категорію оновлено',
+                            subtitle: newName,
+                          );
+                          Navigator.pop(ctx);
+                        } else {
+                          OsnovaToast.warning(
+                            ctx,
+                            'Категорія з такою назвою вже існує',
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 1. Ручне редагування суми готівки в касі
   static Future<void> showEditCashDialog(
     BuildContext context,
@@ -379,8 +715,6 @@ class PosDialogs {
                         onClose: () => Navigator.pop(ctx),
                       ),
                       const SizedBox(height: 14),
-
-                      // Зведена KPI-стрічка зміни
                       Row(
                         children: [
                           _miniKpiBox(
@@ -407,10 +741,7 @@ class PosDialogs {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 14),
-
-                      // Преміальний перемикач вкладок
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
@@ -452,13 +783,10 @@ class PosDialogs {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 12),
-
                       Expanded(
                         child: TabBarView(
                           children: [
-                            // Вкладка 1: Оплачені чеки
                             controller.shiftOrders.isEmpty
                                 ? _emptyJournalState(
                                     icon: Icons.receipt_outlined,
@@ -620,8 +948,6 @@ class PosDialogs {
                                       );
                                     },
                                   ),
-
-                            // Вкладка 2: Журнал витрат зміни
                             controller.shiftExpenses.isEmpty
                                 ? _emptyJournalState(
                                     icon: Icons.savings_outlined,
@@ -766,8 +1092,6 @@ class PosDialogs {
                                       );
                                     },
                                   ),
-
-                            // Вкладка 3: Службові внесення / винесення
                             controller.shiftCashOperations.isEmpty
                                 ? _emptyJournalState(
                                     icon: Icons.swap_vert_rounded,
@@ -874,7 +1198,6 @@ class PosDialogs {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -999,7 +1322,7 @@ class PosDialogs {
     );
   }
 
-  /// 3. Додавання позиції в меню (з живим прев'ю картки та маржею)
+  /// 3. Додавання позиції в меню
   static Future<void> showAddProductDialog(
     BuildContext context,
     PosController controller,
@@ -1051,7 +1374,6 @@ class PosDialogs {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Ліва частина: форма
                         Expanded(
                           flex: 60,
                           child: Column(
@@ -1126,7 +1448,6 @@ class PosDialogs {
                                 ],
                               ),
                               const SizedBox(height: 10),
-                              // Швидкі ціни
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 6,
@@ -1199,10 +1520,7 @@ class PosDialogs {
                             ],
                           ),
                         ),
-
                         const SizedBox(width: 14),
-
-                        // Права частина: Живе прев'ю картки товару
                         Expanded(
                           flex: 40,
                           child: Container(
@@ -1387,7 +1705,7 @@ class PosDialogs {
     );
   }
 
-  /// 4. Внесення витрати (закупівля продуктів, розхідники)
+  /// 4. Внесення витрати
   static Future<void> showExpenseDialog(
     BuildContext context,
     PosController controller,
@@ -1439,8 +1757,6 @@ class PosDialogs {
                       onClose: () => Navigator.pop(ctx),
                     ),
                     const SizedBox(height: 14),
-
-                    // Швидкі шаблони
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
@@ -1464,9 +1780,7 @@ class PosDialogs {
                         );
                       }).toList(),
                     ),
-
                     const SizedBox(height: 12),
-
                     TextField(
                       controller: titleCtrl,
                       autofocus: true,
@@ -1500,7 +1814,6 @@ class PosDialogs {
                         icon: Icons.payments_outlined,
                       ),
                     ),
-
                     const SizedBox(height: 14),
                     Text(
                       'ДЖЕРЕЛО СПИСАННЯ КОШТІВ:',
@@ -1512,7 +1825,6 @@ class PosDialogs {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Row(
                       children: [
                         Expanded(
@@ -1541,7 +1853,6 @@ class PosDialogs {
                         ),
                       ],
                     ),
-
                     if (exceedsDrawer) ...[
                       const SizedBox(height: 10),
                       Container(
@@ -1574,7 +1885,6 @@ class PosDialogs {
                         ),
                       ),
                     ],
-
                     const SizedBox(height: 18),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -1696,7 +2006,7 @@ class PosDialogs {
     );
   }
 
-  /// 5. Стандартний X-звіт та Z-звіт (ДПС / Poster) + Telegram + Xprinter
+  /// 5. X-звіт та Z-звіт
   static Future<void> showReportDialog(
     BuildContext context,
     PosController controller, {
@@ -1744,8 +2054,6 @@ class PosDialogs {
                   onClose: () => Navigator.pop(ctx),
                 ),
                 const SizedBox(height: 14),
-
-                // Швидкі підсумкові KPI-картки звіту
                 Row(
                   children: [
                     _miniKpiBox(
@@ -1770,9 +2078,7 @@ class PosDialogs {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
@@ -1869,9 +2175,7 @@ class PosDialogs {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 14),
-
                 Row(
                   children: [
                     TextButton(
@@ -1932,7 +2236,7 @@ class PosDialogs {
     }
   }
 
-  /// 6. Редагування характеристик або видалення позиції (по затисканню на картку)
+  /// 6. Редагування позиції + КОНСТРУКТОР ПОРЯДКУ В СІТЦІ (Drag & Drop)
   static Future<void> showEditProductDialog(
     BuildContext context,
     PosController controller,
@@ -1952,7 +2256,18 @@ class PosDialogs {
         controller.categories.where((c) => c != 'Усі').toList();
     String category = availableCategories.contains(product.category)
         ? product.category
-        : availableCategories.first;
+        : (availableCategories.isNotEmpty
+            ? availableCategories.first
+            : 'Основне меню');
+
+    // 0 = Параметри позиції, 1 = Конструктор порядку в сітці
+    int activeTab = 0;
+    bool onlySameCategory = true;
+
+    // Копія списку всіх товарів для перетягування
+    List<ProductEntity> workingOrder =
+        List<ProductEntity>.from(controller.allProducts);
+    bool orderChanged = false;
 
     await showDialog(
       context: context,
@@ -1961,6 +2276,10 @@ class PosDialogs {
           final pCents = MoneyFormatter.parseToKopecks(priceCtrl.text);
           final cCents = MoneyFormatter.parseToKopecks(costCtrl.text);
           final margin = pCents > 0 && cCents > 0 ? pCents - cCents : 0;
+
+          final visibleForReorder = onlySameCategory
+              ? workingOrder.where((p) => p.category == category).toList()
+              : workingOrder;
 
           return Dialog(
             backgroundColor: OsnovaTheme.surfaceCard,
@@ -1972,7 +2291,10 @@ class PosDialogs {
               ),
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
+              constraints: BoxConstraints(
+                maxWidth: activeTab == 0 ? 480 : 560,
+                maxHeight: 620,
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -1980,117 +2302,393 @@ class PosDialogs {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _dialogHeader(
-                      icon: Icons.edit_note_rounded,
-                      title: 'РЕДАГУВАННЯ ПОЗИЦІЇ',
-                      subtitle: 'Зміна назви, ціни, собівартості або категорії',
+                      icon: activeTab == 0
+                          ? Icons.edit_note_rounded
+                          : Icons.drag_indicator_rounded,
+                      title: activeTab == 0
+                          ? 'РЕДАГУВАННЯ ПОЗИЦІЇ'
+                          : 'КОНСТРУКТОР СІТКИ МЕНЮ',
+                      subtitle: activeTab == 0
+                          ? 'Зміна назви, ціни, категорії або перехід до порядку'
+                          : 'Затисніть та перетягніть картку на потрібне місце',
                       onClose: () => Navigator.pop(ctx),
-                      trailing: IconButton(
-                        tooltip: 'Видалити з меню',
-                        icon: const Icon(
-                          Icons.delete_outline_rounded,
-                          color: Colors.redAccent,
-                        ),
-                        onPressed: () async {
-                          await controller.deleteProduct(product.id);
-                          if (ctx.mounted) {
-                            OsnovaToast.success(
-                              ctx,
-                              'Позицію видалено з меню',
-                              subtitle: product.name,
-                            );
-                            Navigator.pop(ctx);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: nameCtrl,
-                      style: TextStyle(
-                        color: OsnovaTheme.creamText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      decoration: _premiumInput(
-                        label: 'Назва позиції',
-                        icon: Icons.local_cafe_outlined,
-                      ),
+                      trailing: activeTab == 0
+                          ? IconButton(
+                              tooltip: 'Видалити з меню',
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                              ),
+                              onPressed: () async {
+                                await controller.deleteProduct(product.id);
+                                if (ctx.mounted) {
+                                  OsnovaToast.success(
+                                    ctx,
+                                    'Позицію видалено з меню',
+                                    subtitle: product.name,
+                                  );
+                                  Navigator.pop(ctx);
+                                }
+                              },
+                            )
+                          : null,
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: priceCtrl,
-                            onChanged: (_) => setDialogState(() {}),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: _premiumInput(
-                              label: 'Ціна продажу',
-                              suffixText: 'грн',
+
+                    // Перемикач режиму: Параметри / Порядок в сітці
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A1914),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: OsnovaTheme.gold.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setDialogState(() => activeTab = 0),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  gradient: activeTab == 0
+                                      ? OsnovaTheme.goldGradient
+                                      : null,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 16,
+                                      color: activeTab == 0
+                                          ? OsnovaTheme.bgDark
+                                          : OsnovaTheme.creamText,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Параметри',
+                                      style: TextStyle(
+                                        color: activeTab == 0
+                                            ? OsnovaTheme.bgDark
+                                            : OsnovaTheme.creamText,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: costCtrl,
-                            onChanged: (_) => setDialogState(() {}),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                              decimal: true,
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setDialogState(() => activeTab = 1),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  gradient: activeTab == 1
+                                      ? OsnovaTheme.goldGradient
+                                      : null,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.swap_vert_rounded,
+                                      size: 17,
+                                      color: activeTab == 1
+                                          ? OsnovaTheme.bgDark
+                                          : OsnovaTheme.creamText,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Порядок у сітці',
+                                      style: TextStyle(
+                                        color: activeTab == 1
+                                            ? OsnovaTheme.bgDark
+                                            : OsnovaTheme.creamText,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            decoration: _premiumInput(
-                              label: 'Собівартість',
-                              suffixText: 'грн',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    if (activeTab == 0) ...[
+                      TextField(
+                        controller: nameCtrl,
+                        style: TextStyle(
+                          color: OsnovaTheme.creamText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _premiumInput(
+                          label: 'Назва позиції',
+                          icon: Icons.local_cafe_outlined,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: priceCtrl,
+                              onChanged: (_) => setDialogState(() {}),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              decoration: _premiumInput(
+                                label: 'Ціна продажу',
+                                suffixText: 'грн',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: costCtrl,
+                              onChanged: (_) => setDialogState(() {}),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              decoration: _premiumInput(
+                                label: 'Собівартість',
+                                suffixText: 'грн',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (margin > 0) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Чиста маржа: +${MoneyFormatter.format(margin)}',
+                            style: TextStyle(
+                              color: OsnovaTheme.liveGreen,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                       ],
-                    ),
-                    if (margin > 0) ...[
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Чиста маржа: +${MoneyFormatter.format(margin)}',
-                          style: TextStyle(
-                            color: OsnovaTheme.liveGreen,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: availableCategories.map((c) {
+                          final selected = category == c;
+                          return ChoiceChip(
+                            label: Text(
+                              c,
+                              style: TextStyle(
+                                color: selected
+                                    ? OsnovaTheme.bgDark
+                                    : OsnovaTheme.creamText,
+                                fontWeight: selected
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            selected: selected,
+                            selectedColor: OsnovaTheme.gold,
+                            backgroundColor: const Color(0xFF0A1914),
+                            onSelected: (_) =>
+                                setDialogState(() => category = c),
+                          );
+                        }).toList(),
+                      ),
+                    ] else ...[
+                      // Фільтр області сортування
+                      Row(
+                        children: [
+                          ChoiceChip(
+                            label: Text(
+                              'Категорія «$category»',
+                              style: TextStyle(
+                                color: onlySameCategory
+                                    ? OsnovaTheme.bgDark
+                                    : OsnovaTheme.creamText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            selected: onlySameCategory,
+                            selectedColor: OsnovaTheme.gold,
+                            backgroundColor: const Color(0xFF0A1914),
+                            onSelected: (_) =>
+                                setDialogState(() => onlySameCategory = true),
                           ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            label: Text(
+                              'Усе меню (${workingOrder.length})',
+                              style: TextStyle(
+                                color: !onlySameCategory
+                                    ? OsnovaTheme.bgDark
+                                    : OsnovaTheme.creamText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            selected: !onlySameCategory,
+                            selectedColor: OsnovaTheme.gold,
+                            backgroundColor: const Color(0xFF0A1914),
+                            onSelected: (_) =>
+                                setDialogState(() => onlySameCategory = false),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ReorderableListView.builder(
+                          buildDefaultDragHandles: false,
+                          itemCount: visibleForReorder.length,
+                          onReorderItem: (oldIdx, newIdx) {
+                            HapticFeedback.selectionClick();
+                            setDialogState(() {
+                              if (!onlySameCategory) {
+                                final moved = workingOrder.removeAt(oldIdx);
+                                workingOrder.insert(newIdx, moved);
+                              } else {
+                                // Переставляємо всередині категорії зі збереженням глобальних слотів
+                                final catItems =
+                                    List<ProductEntity>.from(visibleForReorder);
+                                final moved = catItems.removeAt(oldIdx);
+                                catItems.insert(newIdx, moved);
+
+                                int ptr = 0;
+                                for (int i = 0; i < workingOrder.length; i++) {
+                                  if (workingOrder[i].category == category) {
+                                    workingOrder[i] = catItems[ptr++];
+                                  }
+                                }
+                              }
+                              orderChanged = true;
+                            });
+                          },
+                          itemBuilder: (ctx, idx) {
+                            final item = visibleForReorder[idx];
+                            final isCurrent = item.id == product.id;
+
+                            return ReorderableDragStartListener(
+                              key: ValueKey('prod_order_${item.id}'),
+                              index: idx,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 7),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? const Color(0xFF17382C)
+                                      : const Color(0xFF0A1914),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? OsnovaTheme.goldBright
+                                        : OsnovaTheme.gold
+                                            .withValues(alpha: 0.22),
+                                    width: isCurrent ? 1.4 : 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.drag_indicator_rounded,
+                                      color: isCurrent
+                                          ? OsnovaTheme.goldBright
+                                          : OsnovaTheme.sageMuted,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 26,
+                                      alignment: Alignment.center,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: OsnovaTheme.gold
+                                            .withValues(alpha: 0.16),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '${idx + 1}',
+                                        style: TextStyle(
+                                          color: OsnovaTheme.goldBright,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: isCurrent
+                                                  ? Colors.white
+                                                  : OsnovaTheme.creamText,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          if (!onlySameCategory)
+                                            Text(
+                                              item.category,
+                                              style: TextStyle(
+                                                color: OsnovaTheme.sageMuted,
+                                                fontSize: 10.5,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      MoneyFormatter.formatShort(item.price),
+                                      style: TextStyle(
+                                        color: OsnovaTheme.goldBright,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: availableCategories.map((c) {
-                        final selected = category == c;
-                        return ChoiceChip(
-                          label: Text(
-                            c,
-                            style: TextStyle(
-                              color: selected
-                                  ? OsnovaTheme.bgDark
-                                  : OsnovaTheme.creamText,
-                              fontWeight: selected
-                                  ? FontWeight.w900
-                                  : FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                          selected: selected,
-                          selectedColor: OsnovaTheme.gold,
-                          backgroundColor: const Color(0xFF0A1914),
-                          onSelected: (_) =>
-                              setDialogState(() => category = c),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 18),
+
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -2104,12 +2702,21 @@ class PosDialogs {
                         const SizedBox(width: 10),
                         _goldPrimaryButton(
                           icon: Icons.save_rounded,
-                          label: 'Зберегти зміни',
+                          label: orderChanged && activeTab == 1
+                              ? 'Зберегти порядок'
+                              : 'Зберегти зміни',
                           onPressed: () async {
                             final newPrice =
                                 MoneyFormatter.parseToKopecks(priceCtrl.text);
                             final newCost =
                                 MoneyFormatter.parseToKopecks(costCtrl.text);
+
+                            if (orderChanged) {
+                              await controller.reorderProducts(
+                                workingOrder.map((e) => e.id).toList(),
+                              );
+                            }
+
                             if (nameCtrl.text.trim().isNotEmpty &&
                                 newPrice > 0) {
                               await controller.updateProduct(
@@ -2119,14 +2726,17 @@ class PosDialogs {
                                 priceKopecks: newPrice,
                                 costPriceKopecks: newCost,
                               );
-                              if (ctx.mounted) {
-                                OsnovaToast.success(
-                                  ctx,
-                                  'Зміни збережено',
-                                  subtitle: nameCtrl.text.trim(),
-                                );
-                                Navigator.pop(ctx);
-                              }
+                            }
+
+                            if (ctx.mounted) {
+                              OsnovaToast.success(
+                                ctx,
+                                orderChanged
+                                    ? 'Порядок і параметри збережено'
+                                    : 'Зміни збережено',
+                                subtitle: nameCtrl.text.trim(),
+                              );
+                              Navigator.pop(ctx);
                             }
                           },
                         ),
@@ -2142,7 +2752,7 @@ class PosDialogs {
     );
   }
 
-  /// 7. Налаштування мережевого термопринтера Xprinter (Wi-Fi / LAN 9100)
+  /// 7. Налаштування мережевого термопринтера Xprinter
   static Future<void> showPrinterSettingsDialog(
     BuildContext context,
     PosController controller, {
@@ -2217,8 +2827,6 @@ class PosDialogs {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Секція автопошуку принтерів
                     if (isScanning)
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 22),
@@ -2371,10 +2979,7 @@ class PosDialogs {
                         );
                       }),
                     ],
-
                     const SizedBox(height: 12),
-
-                    // Поле ручного вводу IP
                     TextField(
                       controller: manualIpCtrl,
                       onChanged: (v) =>
@@ -2389,7 +2994,6 @@ class PosDialogs {
                         icon: Icons.lan_outlined,
                       ),
                     ),
-
                     const SizedBox(height: 14),
                     Text(
                       'ШИРИНА ТЕРМОСТРІЧКИ:',
@@ -2401,7 +3005,6 @@ class PosDialogs {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Row(
                       children: [
                         Expanded(
@@ -2427,9 +3030,7 @@ class PosDialogs {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 18),
-
                     Row(
                       children: [
                         if (activeIp.isNotEmpty)

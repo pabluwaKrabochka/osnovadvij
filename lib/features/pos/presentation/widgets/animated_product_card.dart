@@ -10,7 +10,7 @@ class AnimatedProductCard extends StatefulWidget {
   final int index;
   final int cartQty;
   final VoidCallback onTap;
-  final VoidCallback onDecrement;
+  final VoidCallback? onDecrement;
   final VoidCallback onLongPress;
 
   const AnimatedProductCard({
@@ -19,7 +19,7 @@ class AnimatedProductCard extends StatefulWidget {
     required this.index,
     required this.cartQty,
     required this.onTap,
-    required this.onDecrement,
+    this.onDecrement,
     required this.onLongPress,
   });
 
@@ -168,7 +168,6 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
               clipper: ShapeBorderClipper(shape: cardShape),
               child: Stack(
                 children: [
-                  // Кольоровий індикатор категорії зліва (замість важкого градієнта)
                   Positioned(
                     left: 0,
                     top: isCyberpunk ? 12 : 14,
@@ -186,7 +185,6 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
                     ),
                   ),
 
-                  // Помірний shimmer-відблиск ТІЛЬКИ для товарів, доданих до кошика
                   if (hasItems)
                     Positioned.fill(
                       child: IgnorePointer(
@@ -253,63 +251,26 @@ class _AnimatedProductCardState extends State<AnimatedProductCard>
                               ),
                             ),
                             if (hasItems)
-                              // Бейдж кількості + швидка кнопка «−1»
                               Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: ShapeDecoration(
                                   shape: OsnovaTheme.adaptiveShape(
-                                    radius: 18,
+                                    radius: 14,
                                     bevel: 6,
                                   ),
                                   gradient: OsnovaTheme.goldGradient,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        widget.onDecrement();
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          8,
-                                          4,
-                                          5,
-                                          4,
-                                        ),
-                                        child: Icon(
-                                          Icons.remove_rounded,
-                                          size: 14,
-                                          color: OsnovaTheme.bgDark,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 1,
-                                      height: 12,
-                                      color: OsnovaTheme.bgDark
-                                          .withValues(alpha: 0.25),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        6,
-                                        3.5,
-                                        9,
-                                        3.5,
-                                      ),
-                                      child: Text(
-                                        '×${widget.cartQty}',
-                                        style: TextStyle(
-                                          color: OsnovaTheme.bgDark,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 12.5,
-                                          fontFeatures:
-                                              OsnovaTheme.tabularFigures,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  '×${widget.cartQty}',
+                                  style: TextStyle(
+                                    color: OsnovaTheme.bgDark,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.5,
+                                    fontFeatures: OsnovaTheme.tabularFigures,
+                                  ),
                                 ),
                               )
                             else
